@@ -61,8 +61,14 @@ fn get_mp3_files(path: &str) -> Vec<PathBuf> {
     if let Ok(entries) = fs::read_dir(path) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_file() && path.extension().map_or(false, |ext| ext == "mp3") {
-                files.push(path);
+            if path.is_file() {
+                // Accept common audio formats
+                if let Some(ext) = path.extension() {
+                    let ext_str = ext.to_string_lossy().to_lowercase();
+                    if matches!(ext_str.as_str(), "mp3" | "m4a" | "mp4" | "aac" | "flac" | "ogg" | "wav") {
+                        files.push(path);
+                    }
+                }
             }
         }
     }
@@ -79,14 +85,23 @@ fn stream_mp3_file(
     let mss = MediaSourceStream::new(Box::new(file), Default::default());
 
     let mut hint = Hint::new();
-    hint.with_extension("mp3");
+    // Add hint based on file extension
+    if let Some(ext) = path.extension() {
+        hint.with_extension(&ext.to_string_lossy());
+    }
 
     let meta_opts: MetadataOptions = Default::default();
     let fmt_opts: FormatOptions = Default::default();
 
     let mut probed = symphonia::default::get_probe()
         .format(&hint, mss, &fmt_opts, &meta_opts)
-        .map_err(|e| format!("Probe error: {}", e))?;
+        .map_err(|e| {
+            // Provide helpful error message
+            let ext = path.extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("unknown");
+            format!("Failed to probe file (extension: {}): {}. This file may be corrupt or not a valid audio file.", ext, e)
+        })?;
 
     let mut format = probed.format;
     let track = format
@@ -98,8 +113,25 @@ fn stream_mp3_file(
     let track_id = track.id;
     let codec_params = &track.codec_params;
 
-    // Extract metadata
-    let sample_rate = codec_params.sample_rate.unwrap_or(DEFAULT_SAMPLE_RATE);
+    // --- STRICT GUARD: Check Sample Rate ---
+    // We use unwrap_or(0) here to ensure we don't accidentally default to 44100
+    // if the metadata is missing, catching "unknown" rates as errors too.
+    let sample_rate = codec_params.sample_rate.unwrap_or(0);
+
+    if sample_rate != DEFAULT_SAMPLE_RATE {
+        let filename = path.file_name().unwrap_or_default().to_string_lossy();
+        tracing::warn!(
+            "⏭️  Skipping '{}': Sample Rate mismatch. Found {}Hz, required {}Hz.",
+            filename,
+            sample_rate,
+            DEFAULT_SAMPLE_RATE
+        );
+        // Returning Ok(()) finishes this function cleanly, allowing the loop
+        // in start() to proceed to the next file immediately.
+        return Ok(());
+    }
+    // ---------------------------------------
+
     let duration_secs = codec_params
         .n_frames
         .map(|frames| (frames as f64 * SAMPLES_PER_FRAME as f64) / sample_rate as f64)
@@ -164,9 +196,6 @@ fn stream_mp3_file(
         .make(&codec_params, &dec_opts)
         .map_err(|e| format!("Decoder error: {}", e))?;
 
-    // Calculate frame duration
-    let frame_duration = Duration::from_secs_f64(SAMPLES_PER_FRAME as f64 / sample_rate as f64);
-
     // Stream packets
     let mut frame_count = 0;
     loop {
@@ -187,14 +216,21 @@ fn stream_mp3_file(
             continue;
         }
 
-        // Decode to ensure it's valid, but we'll send the raw packet data
-        match decoder.decode(&packet) {
-            Ok(_) => {}
+        // Decode to get actual sample count and validate
+        let decoded = match decoder.decode(&packet) {
+            Ok(d) => d,
             Err(e) => {
                 tracing::warn!("Decode error: {}", e);
                 continue;
             }
-        }
+        };
+
+        // Calculate precise duration from decoded audio buffer
+        // This handles MPEG1 (1152 samples) and MPEG2/2.5 (576 samples) correctly
+        let frame_samples = decoded.capacity() as u64;
+        let frame_duration = Duration::from_secs_f64(
+            frame_samples as f64 / sample_rate as f64
+        );
 
         // Send the raw packet data (this is the encoded MP3 frame)
         let frame_data = Bytes::copy_from_slice(packet.buf());
