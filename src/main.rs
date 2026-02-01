@@ -85,16 +85,20 @@ async fn main() {
     });
 
     // Setup web server
-    let app = Router::new()
+    // Setup web server
+    let api_routes = Router::new()
         .merge(orm::users::router())
         .merge(orm::artists::router())
         .merge(orm::albums::router())
         .merge(orm::songs::router())
         .merge(orm::tags::router())
-        .route_service("/", ServeFile::new("web.html"))
         .route("/stream", get(handlers::stream_audio))
-        .route("/api/status", get(handlers::get_status))
-        .route("/api/heartbeat", post(handlers::heartbeat))
+        .route("/status", get(handlers::get_status))
+        .route("/heartbeat", post(handlers::heartbeat));
+
+    let app = Router::new()
+        .route_service("/", ServeFile::new("web.html"))
+        .nest("/api", api_routes)
         .with_state(app_state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")

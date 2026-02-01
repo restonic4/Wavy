@@ -340,7 +340,7 @@
                 </div>
 
                 <div id="login-tab" class="tab-content active">
-                    <p style="color: #aaa; margin-bottom: 10px; font-size: 0.9rem;">POST /auth/login</p>
+                    <p style="color: #aaa; margin-bottom: 10px; font-size: 0.9rem;">POST /api/auth/login</p>
                     <form id="login-form">
                         <input type="text" id="login-username" placeholder="Username" required>
                         <input type="password" id="login-password" placeholder="Password" required>
@@ -349,7 +349,7 @@
                 </div>
 
                 <div id="register-tab" class="tab-content">
-                    <p style="color: #aaa; margin-bottom: 10px; font-size: 0.9rem;">POST /auth/register</p>
+                    <p style="color: #aaa; margin-bottom: 10px; font-size: 0.9rem;">POST /api/auth/register</p>
                     <form id="register-form">
                         <input type="text" id="register-username" placeholder="Username" required>
                         <input type="password" id="register-password" placeholder="Password" required>
@@ -366,7 +366,7 @@
 
                 <!-- Username Editor -->
                 <details style="margin-bottom: 15px;">
-                    <summary>✏️ Edit Username (POST /users/{id})</summary>
+                    <summary>✏️ Edit Username (POST /api/users/{id})</summary>
                     <form id="edit-username-form" style="margin-top: 10px;">
                         <input type="text" id="new-username" placeholder="New Username" required>
                         <button type="submit">Update Username</button>
@@ -374,7 +374,7 @@
                     <div id="edit-username-status"></div>
                 </details>
 
-                <button class="secondary" onclick="logout()">Logout (POST /auth/logout)</button>
+                <button class="secondary" onclick="logout()">Logout (POST /api/auth/logout)</button>
             </div>
         </div>
 
@@ -388,7 +388,7 @@
                 </span>
             </div>
             <audio id="audio" controls></audio>
-            <button onclick="startListening()" style="margin-top: 10px;">Start Listening (GET /stream)</button>
+            <button onclick="startListening()" style="margin-top: 10px;">Start Listening (GET /api/stream)</button>
             <p style="color: #666; font-size: 0.85rem; margin-top: 10px;">
                 Heartbeat: POST /api/heartbeat (every 1s) • Status: GET /api/status
             </p>
@@ -413,7 +413,7 @@
             <!-- Upload Song Tab -->
             <div id="admin-upload-tab" class="tab-content active">
                 <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
-                    POST /songs/upload - Upload audio file with metadata
+                    POST /api/songs/upload - Upload audio file with metadata
                 </p>
                 <form id="upload-form">
                     <input type="text" id="upload-title" placeholder="Song Title" required>
@@ -432,7 +432,7 @@
             <!-- Create Metadata Tab -->
             <div id="admin-create-tab" class="tab-content">
                 <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
-                    POST /songs - Create song metadata only
+                    POST /api/songs - Create song metadata only
                 </p>
                 <form id="create-song-form">
                     <input type="text" id="create-title" placeholder="Song Title" required>
@@ -446,7 +446,7 @@
             <!-- Song Library Tab -->
             <div id="admin-library-tab" class="tab-content">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <p style="color: #aaa; font-size: 0.9rem;">Current Database Library (GET /songs)</p>
+                    <p style="color: #aaa; font-size: 0.9rem;">Current Database Library (GET /api/songs)</p>
                     <button onclick="refreshSongLibrary()"
                         style="width: auto; padding: 5px 15px; font-size: 0.8rem;">Refresh</button>
                 </div>
@@ -555,7 +555,7 @@
             <!-- Update Song Tab -->
             <div id="admin-update-tab" class="tab-content">
                 <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
-                    POST /songs/{id} - Update existing song
+                    POST /api/songs/{id} - Update existing song
                 </p>
                 <form id="update-song-form">
                     <input type="number" id="update-song-id" placeholder="Song ID" required>
@@ -570,7 +570,7 @@
             <!-- Delete Song Tab -->
             <div id="admin-delete-tab" class="tab-content">
                 <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
-                    DELETE /songs/{id} - Delete song and file
+                    DELETE /api/songs/{id} - Delete song and file
                 </p>
                 <form id="delete-song-form">
                     <input type="number" id="delete-song-id" placeholder="Song ID" required>
@@ -638,7 +638,7 @@
             const list = document.getElementById('song-library-list');
             list.innerHTML = '<p style="text-align: center; color: #aaa; padding: 20px;">Loading songs...</p>';
             try {
-                const res = await fetch('/songs', { credentials: 'include' });
+                const res = await fetch('/api/songs', { credentials: 'include' });
                 const songs = await res.json();
                 if (songs.length === 0) {
                     list.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No songs in database</p>';
@@ -665,7 +665,7 @@
             const list = document.getElementById('artist-library-list');
             list.innerHTML = '<p style="text-align: center; color: #aaa; padding: 20px;">Loading artists...</p>';
             try {
-                const res = await fetch('/artists', { credentials: 'include' });
+                const res = await fetch('/api/artists', { credentials: 'include' });
                 const artists = await res.json();
                 if (artists.length === 0) {
                     list.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No artists in database</p>';
@@ -688,7 +688,7 @@
             const list = document.getElementById('album-library-list');
             list.innerHTML = '<p style="text-align: center; color: #aaa; padding: 20px;">Loading albums...</p>';
             try {
-                const res = await fetch('/albums', { credentials: 'include' });
+                const res = await fetch('/api/albums', { credentials: 'include' });
                 const albums = await res.json();
                 if (albums.length === 0) {
                     list.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No albums in database</p>';
@@ -712,7 +712,7 @@
             if (newName === null || newName === currentName || newName.trim() === "") return;
 
             try {
-                const res = await fetch(`/artists/${id}`, {
+                const res = await fetch(`/api/artists/${id}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -734,7 +734,7 @@
             if (!confirm(`Are you sure you want to delete artist #${id}? This will also remove matches in song links.`)) return;
 
             try {
-                const res = await fetch(`/artists/${id}`, {
+                const res = await fetch(`/api/artists/${id}`, {
                     method: 'DELETE',
                     credentials: 'include'
                 });
@@ -755,7 +755,7 @@
             if (newTitle === null || newTitle === currentTitle || newTitle.trim() === "") return;
 
             try {
-                const res = await fetch(`/albums/${id}`, {
+                const res = await fetch(`/api/albums/${id}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -777,7 +777,7 @@
             if (!confirm(`Are you sure you want to delete album #${id}? Songs in this album will have their album ID cleared.`)) return;
 
             try {
-                const res = await fetch(`/albums/${id}`, {
+                const res = await fetch(`/api/albums/${id}`, {
                     method: 'DELETE',
                     credentials: 'include'
                 });
@@ -800,7 +800,7 @@
         async function refreshTagLibrary() {
             const list = document.getElementById('tag-library-list');
             try {
-                const res = await fetch('/tags', { credentials: 'include' });
+                const res = await fetch('/api/tags', { credentials: 'include' });
                 const tags = await res.json();
 
                 // Update select dropdowns
@@ -831,7 +831,7 @@
             const newName = prompt("Enter new name for tag:", currentName);
             if (!newName || newName === currentName) return;
             try {
-                const res = await fetch(`/tags/${id}`, {
+                const res = await fetch(`/api/tags/${id}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -847,7 +847,7 @@
         async function deleteTag(id) {
             if (!confirm("Delete tag? This removes all song scorings for this tag.")) return;
             try {
-                const res = await fetch(`/tags/${id}`, { method: 'DELETE', credentials: 'include' });
+                const res = await fetch(`/api/tags/${id}`, { method: 'DELETE', credentials: 'include' });
                 if (res.ok) {
                     showStatus('tag-status', `✓ Tag deleted`, 'success');
                     refreshTagLibrary();
@@ -871,7 +871,7 @@
         async function refreshSongTags() {
             const list = document.getElementById('song-tags-list');
             try {
-                const res = await fetch(`/songs/${currentSongIdForTags}/tags`);
+                const res = await fetch(`/api/songs/${currentSongIdForTags}/tags`);
                 const tags = await res.json();
                 list.innerHTML = tags.map(t => `
                     <div style="background: rgba(0,212,255,0.1); padding: 5px 12px; border-radius: 20px; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(0,212,255,0.3);">
@@ -885,7 +885,7 @@
 
         async function removeSongTag(tagId) {
             try {
-                const res = await fetch(`/songs/${currentSongIdForTags}/tags/${tagId}`, { method: 'DELETE', credentials: 'include' });
+                const res = await fetch(`/api/songs/${currentSongIdForTags}/tags/${tagId}`, { method: 'DELETE', credentials: 'include' });
                 if (res.ok) refreshSongTags();
             } catch (e) { alert(e.message); }
         }
@@ -895,7 +895,7 @@
             const tagId = parseInt(document.getElementById('assign-tag-id').value);
             const score = parseFloat(document.getElementById('assign-tag-score').value);
             try {
-                const res = await fetch(`/songs/${currentSongIdForTags}/tags`, {
+                const res = await fetch(`/api/songs/${currentSongIdForTags}/tags`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -936,7 +936,7 @@
             const resultsDiv = document.getElementById('tag-search-results');
             resultsDiv.innerHTML = "Searching...";
             try {
-                const res = await fetch('/tags/search', {
+                const res = await fetch('/api/tags/search', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(activeSearchFilters)
@@ -960,7 +960,7 @@
             const password = document.getElementById('register-password').value;
 
             try {
-                const res = await fetch('/auth/register', {
+                const res = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -986,7 +986,7 @@
             const password = document.getElementById('login-password').value;
 
             try {
-                const res = await fetch('/auth/login', {
+                const res = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -1010,7 +1010,7 @@
             const newUsername = document.getElementById('new-username').value;
 
             try {
-                const res = await fetch(`/users/${currentUser.id}`, {
+                const res = await fetch(`/api/users/${currentUser.id}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -1035,7 +1035,7 @@
         // Logout
         async function logout() {
             try {
-                await fetch('/auth/logout', {
+                await fetch('/api/auth/logout', {
                     method: 'POST',
                     credentials: 'include'
                 });
@@ -1048,7 +1048,7 @@
         // Check if already logged in
         async function checkAuth() {
             try {
-                const res = await fetch('/auth/me', { credentials: 'include' });
+                const res = await fetch('/api/auth/me', { credentials: 'include' });
                 if (res.ok) {
                     const user = await res.json();
                     showLoggedIn(user);
@@ -1104,7 +1104,7 @@
             if (albumId) formData.append('album_id', albumId);
 
             try {
-                const res = await fetch('/songs/upload', {
+                const res = await fetch('/api/songs/upload', {
                     method: 'POST',
                     body: formData,
                     credentials: 'include'
@@ -1129,7 +1129,7 @@
             e.preventDefault();
             const name = document.getElementById('artist-name-input').value;
             try {
-                const res = await fetch('/artists', {
+                const res = await fetch('/api/artists', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -1154,7 +1154,7 @@
             e.preventDefault();
             const name = document.getElementById('tag-name-input').value;
             try {
-                const res = await fetch('/tags', {
+                const res = await fetch('/api/tags', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -1173,7 +1173,7 @@
             e.preventDefault();
             const title = document.getElementById('album-title-input').value;
             try {
-                const res = await fetch('/albums', {
+                const res = await fetch('/api/albums', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -1210,7 +1210,7 @@
             if (albumId) payload.album_id = parseInt(albumId);
 
             try {
-                const res = await fetch('/songs', {
+                const res = await fetch('/api/songs', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -1250,7 +1250,7 @@
             if (albumId) payload.album_id = parseInt(albumId);
 
             try {
-                const res = await fetch(`/songs/${songId}`, {
+                const res = await fetch(`/api/songs/${songId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -1281,7 +1281,7 @@
             }
 
             try {
-                const res = await fetch(`/songs/${songId}`, {
+                const res = await fetch(`/api/songs/${songId}`, {
                     method: 'DELETE',
                     credentials: 'include'
                 });
@@ -1312,7 +1312,7 @@
 
             document.getElementById('status-text').textContent = 'Connecting...';
 
-            audio.src = `/stream?t=${Date.now()}`;
+            audio.src = `/api/stream?t=${Date.now()}`;
             audio.load();
 
             audio.addEventListener('canplay', () => {

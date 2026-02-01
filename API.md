@@ -6,21 +6,21 @@ This document provides a comprehensive guide to the Wavy Radio REST API.
 All sensitive operations require the user to be logged in with a valid session cookie.
 
 ### Register
-`POST /auth/register`
+`POST /api/auth/register`
 - **Body:** `{ "username": "string", "password": "string" }`
 - **Response:** `200 OK` (User object + sets HTTP-only session cookie)
 
 ### Login
-`POST /auth/login`
+`POST /api/auth/login`
 - **Body:** `{ "identity": "string", "password": "string" }`
 - **Response:** `200 OK` (User object + sets HTTP-only session cookie)
 
 ### Logout
-`POST /auth/logout`
+`POST /api/auth/logout`
 - **Response:** `200 OK` (Clears session cookie)
 
 ### Get Current User
-`GET /auth/me`
+`GET /api/auth/me`
 - **Response:** `200 OK` (User object) or `401 Unauthorized`
 
 ---
@@ -28,7 +28,7 @@ All sensitive operations require the user to be logged in with a valid session c
 ## 🎵 Song Management
 
 ### List Songs
-`GET /songs`
+`GET /api/songs`
 - **Response:** `Vec<Song>`
 ```json
 [
@@ -43,11 +43,11 @@ All sensitive operations require the user to be logged in with a valid session c
 ```
 
 ### Get Song Details
-`GET /songs/{id}`
+`GET /api/songs/{id}`
 - **Response:** `Song` object
 
 ### Create Song Metadata (Admin Only)
-`POST /songs`
+`POST /api/songs`
 - **Body:**
 ```json
 {
@@ -58,7 +58,7 @@ All sensitive operations require the user to be logged in with a valid session c
 ```
 
 ### Upload Audio File (Admin Only)
-`POST /songs/upload`
+`POST /api/songs/upload`
 - **Content-Type:** `multipart/form-data`
 - **Fields:**
     - `file`: Audio file (mp3, wav, etc.)
@@ -67,7 +67,7 @@ All sensitive operations require the user to be logged in with a valid session c
     - `album_id`: number (optional)
 
 ### Update Song (Admin Only)
-`POST /songs/{id}`
+`POST /api/songs/{id}`
 - **Body:** (all fields optional)
 ```json
 {
@@ -78,7 +78,7 @@ All sensitive operations require the user to be logged in with a valid session c
 ```
 
 ### Delete Song (Admin Only)
-`DELETE /songs/{id}`
+`DELETE /api/songs/{id}`
 - **Response:** `200 OK` (Removes song from DB and deletes local MP3 file)
 
 ---
@@ -86,19 +86,19 @@ All sensitive operations require the user to be logged in with a valid session c
 ## 👨‍🎤 Artist Management
 
 ### List Artists
-`GET /artists`
+`GET /api/artists`
 - **Response:** `Vec<Artist>`
 
 ### Create Artist (Admin Only)
-`POST /artists`
+`POST /api/artists`
 - **Body:** `{ "name": "string" }`
 
 ### Update Artist (Admin Only)
-`POST /artists/{id}`
+`POST /api/artists/{id}`
 - **Body:** `{ "name": "string" }`
 
 ### Delete Artist (Admin Only)
-`DELETE /artists/{id}`
+`DELETE /api/artists/{id}`
 - **Note:** Deleting an artist will nullify the `artist_id` for related users and remove links in `song_artists`.
 
 ---
@@ -106,19 +106,19 @@ All sensitive operations require the user to be logged in with a valid session c
 ## 💿 Album Management
 
 ### List Albums
-`GET /albums`
+`GET /api/albums`
 - **Response:** `Vec<Album>`
 
 ### Create Album (Admin Only)
-`POST /albums`
+`POST /api/albums`
 - **Body:** `{ "title": "string" }`
 
 ### Update Album (Admin Only)
-`POST /albums/{id}`
+`POST /api/albums/{id}`
 - **Body:** `{ "title": "string" }`
 
 ### Delete Album (Admin Only)
-`DELETE /albums/{id}`
+`DELETE /api/albums/{id}`
 - **Note:** Deleting an album will nullify the `album_id` for related songs.
 
 ---
@@ -126,23 +126,23 @@ All sensitive operations require the user to be logged in with a valid session c
 ## 🏷️ Tag Management & Search
 
 ### List All Tags
-`GET /tags`
+`GET /api/tags`
 - **Response:** `Vec<Tag>`
 
 ### Create Tag (Admin Only)
-`POST /tags`
+`POST /api/tags`
 - **Body:** `{ "name": "string" }`
 
 ### Update Tag (Admin Only)
-`POST /tags/{id}`
+`POST /api/tags/{id}`
 - **Body:** `{ "name": "string" }`
 
 ### Delete Tag (Admin Only)
-`DELETE /tags/{id}`
+`DELETE /api/tags/{id}`
 - **Note:** Deleting a tag triggers a CASCADE delete of all song scoring associations for that tag.
 
 ### Vector Search (Song Discovery)
-`POST /tags/search`
+`POST /api/tags/search`
 - **Description:** Finds songs that closest match a specific "vibe" vector.
 - **Body:** `Vec<TagRequest>`
 ```json
@@ -154,17 +154,17 @@ All sensitive operations require the user to be logged in with a valid session c
 - **Response:** `Vec<SongSearchResult>` (Sorted by lowest `match_error`)
 
 ### Manage Song Tags (Admin Only)
-- **List tags for a song:** `GET /songs/{id}/tags`
-- **Assign/Update tag score:** `POST /songs/{id}/tags`
+- **List tags for a song:** `GET /api/songs/{id}/tags`
+- **Assign/Update tag score:** `POST /api/songs/{id}/tags`
     - **Body:** `{ "tag_id": number, "score": 0.0-1.0 }`
-- **Remove tag from song:** `DELETE /songs/{id}/tags/{tag_id}`
+- **Remove tag from song:** `DELETE /api/songs/{id}/tags/{tag_id}`
 
 ---
 
 ## 📡 Streaming & Live Status
 
 ### Audio Stream
-`GET /stream`
+`GET /api/stream`
 - **Response:** Infinite MP3 audio stream. 
 - Supports burst buffering (starts with ~3s of audio instantly).
 
@@ -182,5 +182,5 @@ All sensitive operations require the user to be logged in with a valid session c
 
 ## 🛠️ Developer Integration Tips
 - **Cookies:** Ensure your fetch calls use `credentials: 'include'`.
-- **Admin Access:** Check the `role` field in the user object from `/auth/me` to enable/disable admin UI.
+- **Admin Access:** Check the `role` field in the user object from `/api/auth/me` to enable/disable admin UI.
 - **Errors:** Handlers return descriptive error strings on failure (4xx/5xx).
