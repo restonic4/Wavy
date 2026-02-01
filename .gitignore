@@ -1,6 +1,7 @@
 /target
 .idea
 data
+raw_songs
 *.mp3
 radio.db
 radio.db-shm
