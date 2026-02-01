@@ -44,7 +44,7 @@ pub async fn update(pool: &SqlitePool, id: i64, dto: UpdateAlbumDto) -> Result<A
 
     qb.push(" WHERE id = ");
     qb.push_bind(id);
-    qb.push(" RETURNING id as \"id!\", title");
+    qb.push(" RETURNING id, title");
 
     let album = qb.build_query_as::<Album>()
         .fetch_optional(pool)

@@ -4,5 +4,5 @@ CREATE TABLE users (
     password_hash TEXT NOT NULL,
     artist_id INTEGER,
     role TEXT NOT NULL DEFAULT 'user', -- 'user', 'minimod', 'mod', 'admin'
-    FOREIGN KEY (artist_id) REFERENCES artists(id)
+    FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE SET NULL
 );

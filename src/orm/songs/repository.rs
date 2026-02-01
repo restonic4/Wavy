@@ -9,10 +9,12 @@ pub async fn find_all(pool: &SqlitePool) -> Result<Vec<Song>, String> {
             s.id as "id!", 
             s.title, 
             s.album_id,
+            al.title as album_title,
             GROUP_CONCAT(a.name, ', ') as artist_names
         FROM songs s
         LEFT JOIN song_artists sa ON s.id = sa.song_id
         LEFT JOIN artists a ON sa.artist_id = a.id
+        LEFT JOIN albums al ON s.album_id = al.id
         GROUP BY s.id
         ORDER BY s.title
         "#
@@ -30,10 +32,12 @@ pub async fn find_by_id(pool: &SqlitePool, id: i64) -> Result<Option<Song>, Stri
             s.id as "id!", 
             s.title, 
             s.album_id,
+            al.title as album_title,
             GROUP_CONCAT(a.name, ', ') as artist_names
         FROM songs s
         LEFT JOIN song_artists sa ON s.id = sa.song_id
         LEFT JOIN artists a ON sa.artist_id = a.id
+        LEFT JOIN albums al ON s.album_id = al.id
         WHERE s.id = ?
         GROUP BY s.id
         "#,

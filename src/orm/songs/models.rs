@@ -6,6 +6,7 @@ pub struct Song {
     pub id: i64,
     pub title: String,
     pub album_id: Option<i64>,
+    pub album_title: Option<String>,
     pub artist_names: Option<String>, // Aggregated from the song_artists join table
 }
 

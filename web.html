@@ -404,6 +404,7 @@
                 <button class="tab" data-tab="create" onclick="switchAdminTab('create')">Create Song</button>
                 <button class="tab" data-tab="library" onclick="switchAdminTab('library')">Song Library</button>
                 <button class="tab" data-tab="artists" onclick="switchAdminTab('artists')">Artists</button>
+                <button class="tab" data-tab="albums" onclick="switchAdminTab('albums')">Albums</button>
                 <button class="tab" data-tab="update" onclick="switchAdminTab('update')">Update</button>
                 <button class="tab" data-tab="delete" onclick="switchAdminTab('delete')">Delete</button>
             </div>
@@ -470,6 +471,26 @@
                 </div>
                 <div id="artist-library-list" style="max-height: 300px; overflow-y: auto;">
                     <p style="text-align: center; color: #666; padding: 20px;">Click Refresh to load artists...</p>
+                </div>
+            </div>
+
+            <!-- Albums Management Tab -->
+            <div id="admin-albums-tab" class="tab-content">
+                <h3>Add Album</h3>
+                <form id="create-album-form" style="margin-top: 10px; display: flex; gap: 8px;">
+                    <input type="text" id="album-title-input" placeholder="Album Title" required>
+                    <button type="submit" style="width: auto; white-space: nowrap;">Add Album</button>
+                </form>
+                <div id="album-status" style="margin-top: 10px;"></div>
+
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; margin-bottom: 10px;">
+                    <h3 style="margin: 0;">Album List</h3>
+                    <button onclick="refreshAlbumLibrary()"
+                        style="width: auto; padding: 5px 15px; font-size: 0.8rem;">Refresh</button>
+                </div>
+                <div id="album-library-list" style="max-height: 300px; overflow-y: auto;">
+                    <p style="text-align: center; color: #666; padding: 20px;">Click Refresh to load albums...</p>
                 </div>
             </div>
 
@@ -605,6 +626,7 @@ Cookie optional (anonymous if no cookie)
 
             if (tab === 'library') refreshSongLibrary();
             if (tab === 'artists') refreshArtistLibrary();
+            if (tab === 'albums') refreshAlbumLibrary();
         }
 
         // --- Library Refreshing ---
@@ -620,12 +642,12 @@ Cookie optional (anonymous if no cookie)
                 }
                 list.innerHTML = '<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">' +
                     '<tr style="border-bottom: 2px solid #333; text-align: left;">' +
-                    '<th style="padding: 8px;">ID</th><th style="padding: 8px;">Title</th><th style="padding: 8px;">Artists</th><th style="padding: 8px;">AlbumID</th></tr>' +
+                    '<th style="padding: 8px;">ID</th><th style="padding: 8px;">Title</th><th style="padding: 8px;">Artists</th><th style="padding: 8px;">Album</th></tr>' +
                     songs.map(s => `<tr style="border-bottom: 1px solid #222;">
                         <td style="padding: 8px; font-family: monospace; color: #00d4ff;">${s.id}</td>
                         <td style="padding: 8px;">${escapeHtml(s.title)}</td>
                         <td style="padding: 8px; color: #aaa;">${escapeHtml(s.artist_names || 'None')}</td>
-                        <td style="padding: 8px; color: #666;">${s.album_id || '-'}</td>
+                        <td style="padding: 8px; color: #666;">${escapeHtml(s.album_title || '-')}</td>
                     </tr>`).join('') + '</table>';
             } catch (e) {
                 list.innerHTML = `<p style="color: coral; padding: 10px;">Error: ${e.message}</p>`;
@@ -642,12 +664,125 @@ Cookie optional (anonymous if no cookie)
                     list.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No artists in database</p>';
                     return;
                 }
-                list.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;">' +
-                    artists.map(a => `<div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px;">
-                        <span style="color: #00d4ff; font-family: monospace;">#${a.id}</span> ${escapeHtml(a.name)}
+                list.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">' +
+                    artists.map(a => `<div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                        <span><span style="color: #00d4ff; font-family: monospace;">#${a.id}</span> ${escapeHtml(a.name)}</span>
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="editArtist(${a.id}, '${escapeHtml(a.name).replace(/'/g, "\\'")}')" style="width: auto; padding: 2px 6px; font-size: 0.7rem; background: rgba(255,255,255,0.1); color: white;">Edit</button>
+                            <button onclick="deleteArtist(${a.id})" style="width: auto; padding: 2px 6px; font-size: 0.7rem; background: rgba(255,68,68,0.2); color: #ff4444;">Del</button>
+                        </div>
                     </div>`).join('') + '</div>';
             } catch (e) {
                 list.innerHTML = `<p style="color: coral; padding: 10px;">Error: ${e.message}</p>`;
+            }
+        }
+
+        async function refreshAlbumLibrary() {
+            const list = document.getElementById('album-library-list');
+            list.innerHTML = '<p style="text-align: center; color: #aaa; padding: 20px;">Loading albums...</p>';
+            try {
+                const res = await fetch('/albums', { credentials: 'include' });
+                const albums = await res.json();
+                if (albums.length === 0) {
+                    list.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No albums in database</p>';
+                    return;
+                }
+                list.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">' +
+                    albums.map(a => `<div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                        <span><span style="color: #00d4ff; font-family: monospace;">#${a.id}</span> ${escapeHtml(a.title)}</span>
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="editAlbum(${a.id}, '${escapeHtml(a.title).replace(/'/g, "\\'")}')" style="width: auto; padding: 2px 6px; font-size: 0.7rem; background: rgba(255,255,255,0.1); color: white;">Edit</button>
+                            <button onclick="deleteAlbum(${a.id})" style="width: auto; padding: 2px 6px; font-size: 0.7rem; background: rgba(255,68,68,0.2); color: #ff4444;">Del</button>
+                        </div>
+                    </div>`).join('') + '</div>';
+            } catch (e) {
+                list.innerHTML = `<p style="color: coral; padding: 10px;">Error: ${e.message}</p>`;
+            }
+        }
+
+        async function editArtist(id, currentName) {
+            const newName = prompt("Enter new name for artist:", currentName);
+            if (newName === null || newName === currentName || newName.trim() === "") return;
+
+            try {
+                const res = await fetch(`/artists/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name: newName.trim() })
+                });
+                if (res.ok) {
+                    showStatus('artist-status', `✓ Artist updated`, 'success');
+                    refreshArtistLibrary();
+                } else {
+                    const error = await res.text();
+                    showStatus('artist-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('artist-status', `✗ ${e.message}`, 'error');
+            }
+        }
+
+        async function deleteArtist(id) {
+            if (!confirm(`Are you sure you want to delete artist #${id}? This will also remove matches in song links.`)) return;
+
+            try {
+                const res = await fetch(`/artists/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                if (res.ok) {
+                    showStatus('artist-status', `✓ Artist deleted`, 'success');
+                    refreshArtistLibrary();
+                } else {
+                    const error = await res.text();
+                    showStatus('artist-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('artist-status', `✗ ${e.message}`, 'error');
+            }
+        }
+
+        async function editAlbum(id, currentTitle) {
+            const newTitle = prompt("Enter new title for album:", currentTitle);
+            if (newTitle === null || newTitle === currentTitle || newTitle.trim() === "") return;
+
+            try {
+                const res = await fetch(`/albums/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ title: newTitle.trim() })
+                });
+                if (res.ok) {
+                    showStatus('album-status', `✓ Album updated`, 'success');
+                    refreshAlbumLibrary();
+                } else {
+                    const error = await res.text();
+                    showStatus('album-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('album-status', `✗ ${e.message}`, 'error');
+            }
+        }
+
+        async function deleteAlbum(id) {
+            if (!confirm(`Are you sure you want to delete album #${id}? Songs in this album will have their album ID cleared.`)) return;
+
+            try {
+                const res = await fetch(`/albums/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                if (res.ok) {
+                    showStatus('album-status', `✓ Album deleted`, 'success');
+                    refreshAlbumLibrary();
+                } else {
+                    const error = await res.text();
+                    showStatus('album-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('album-status', `✗ ${e.message}`, 'error');
             }
         }
 
@@ -844,6 +979,31 @@ Cookie optional (anonymous if no cookie)
                 }
             } catch (e) {
                 showStatus('artist-status', `✗ ${e.message}`, 'error');
+            }
+        });
+
+        // Create Album
+        document.getElementById('create-album-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('album-title-input').value;
+            try {
+                const res = await fetch('/albums', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ title })
+                });
+                if (res.ok) {
+                    const album = await res.json();
+                    showStatus('album-status', `✓ Album '${album.title}' created (ID: ${album.id})`, 'success');
+                    document.getElementById('create-album-form').reset();
+                    refreshAlbumLibrary();
+                } else {
+                    const error = await res.text();
+                    showStatus('album-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('album-status', `✗ ${e.message}`, 'error');
             }
         });
 
