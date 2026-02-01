@@ -405,6 +405,7 @@
                 <button class="tab" data-tab="library" onclick="switchAdminTab('library')">Song Library</button>
                 <button class="tab" data-tab="artists" onclick="switchAdminTab('artists')">Artists</button>
                 <button class="tab" data-tab="albums" onclick="switchAdminTab('albums')">Albums</button>
+                <button class="tab" data-tab="tags" onclick="switchAdminTab('tags')">Tags</button>
                 <button class="tab" data-tab="update" onclick="switchAdminTab('update')">Update</button>
                 <button class="tab" data-tab="delete" onclick="switchAdminTab('delete')">Delete</button>
             </div>
@@ -452,6 +453,23 @@
                 <div id="song-library-list" style="max-height: 400px; overflow-y: auto;">
                     <p style="text-align: center; color: #666; padding: 20px;">Click Refresh to load songs...</p>
                 </div>
+
+                <!-- Tag Assignment Inline (appears when a song is selected) -->
+                <div id="tag-assignment-panel" class="hidden"
+                    style="margin-top: 20px; padding: 15px; border: 1px solid #444; border-radius: 8px; background: rgba(0,0,0,0.2);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 id="tag-assignment-title" style="margin: 0;">Manage Tags for Song</h3>
+                        <button onclick="closeTagPanel()"
+                            style="width: auto; background: none; border: none; color: #888; cursor: pointer; font-size: 1.2rem;">&times;</button>
+                    </div>
+                    <form id="assign-tag-form" style="margin-top: 15px; display: flex; gap: 8px; flex-wrap: wrap;">
+                        <select id="assign-tag-id" required style="flex: 1; min-width: 150px;"></select>
+                        <input type="number" id="assign-tag-score" step="0.1" min="0" max="1"
+                            placeholder="Score (0.0-1.0)" required style="width: 120px;">
+                        <button type="submit" style="width: auto;">Assign</button>
+                    </form>
+                    <div id="song-tags-list" style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                </div>
             </div>
 
             <!-- Artists Management Tab -->
@@ -491,6 +509,46 @@
                 </div>
                 <div id="album-library-list" style="max-height: 300px; overflow-y: auto;">
                     <p style="text-align: center; color: #666; padding: 20px;">Click Refresh to load albums...</p>
+                </div>
+            </div>
+
+            <!-- Tags Management Tab -->
+            <div id="admin-tags-tab" class="tab-content">
+                <h3>Add Tag</h3>
+                <form id="create-tag-form" style="margin-top: 10px; display: flex; gap: 8px;">
+                    <input type="text" id="tag-name-input" placeholder="Tag Name (e.g. Summer)" required>
+                    <button type="submit" style="width: auto; white-space: nowrap;">Add Tag</button>
+                </form>
+                <div id="tag-status" style="margin-top: 10px;"></div>
+
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; margin-bottom: 10px;">
+                    <h3 style="margin: 0;">Tag List</h3>
+                    <button onclick="refreshTagLibrary()"
+                        style="width: auto; padding: 5px 15px; font-size: 0.8rem;">Refresh</button>
+                </div>
+                <div id="tag-library-list" style="max-height: 300px; overflow-y: auto;">
+                    <p style="text-align: center; color: #666; padding: 20px;">Click Refresh to load tags...</p>
+                </div>
+
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
+                    <h3>Search Songs by Tags (Vector Match)</h3>
+                    <div id="tag-search-container"
+                        style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                        <div style="display: flex; gap: 8px;">
+                            <select id="search-tag-select" style="flex: 1;"></select>
+                            <input type="number" id="search-tag-score" step="0.1" min="0" max="1" value="0.5"
+                                style="width: 80px;">
+                            <button onclick="addSearchTag()" style="width: auto;">Add to Filter</button>
+                        </div>
+                        <div id="active-search-tags"
+                            style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;"></div>
+                        <button onclick="executeTagSearch()"
+                            style="background: #00d4ff; color: black; font-weight: bold;">Search (Vector
+                            Distance)</button>
+                        <div id="tag-search-results" style="margin-top: 15px; max-height: 300px; overflow-y: auto;">
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -627,6 +685,7 @@ Cookie optional (anonymous if no cookie)
             if (tab === 'library') refreshSongLibrary();
             if (tab === 'artists') refreshArtistLibrary();
             if (tab === 'albums') refreshAlbumLibrary();
+            if (tab === 'tags') refreshTagLibrary();
         }
 
         // --- Library Refreshing ---
@@ -642,12 +701,15 @@ Cookie optional (anonymous if no cookie)
                 }
                 list.innerHTML = '<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">' +
                     '<tr style="border-bottom: 2px solid #333; text-align: left;">' +
-                    '<th style="padding: 8px;">ID</th><th style="padding: 8px;">Title</th><th style="padding: 8px;">Artists</th><th style="padding: 8px;">Album</th></tr>' +
+                    '<th style="padding: 8px;">ID</th><th style="padding: 8px;">Title</th><th style="padding: 8px;">Artists</th><th style="padding: 8px;">Album</th><th style="padding: 8px;">Actions</th></tr>' +
                     songs.map(s => `<tr style="border-bottom: 1px solid #222;">
                         <td style="padding: 8px; font-family: monospace; color: #00d4ff;">${s.id}</td>
                         <td style="padding: 8px;">${escapeHtml(s.title)}</td>
                         <td style="padding: 8px; color: #aaa;">${escapeHtml(s.artist_names || 'None')}</td>
                         <td style="padding: 8px; color: #666;">${escapeHtml(s.album_title || '-')}</td>
+                        <td style="padding: 8px;">
+                            <button onclick="openTagPanel(${s.id}, '${escapeHtml(s.title).replace(/'/g, "\\'")}')" style="width: auto; padding: 2px 8px; font-size: 0.75rem;">🏷️ Tags</button>
+                        </td>
                     </tr>`).join('') + '</table>';
             } catch (e) {
                 list.innerHTML = `<p style="color: coral; padding: 10px;">Error: ${e.message}</p>`;
@@ -784,6 +846,166 @@ Cookie optional (anonymous if no cookie)
             } catch (e) {
                 showStatus('album-status', `✗ ${e.message}`, 'error');
             }
+        }
+
+        // --- Tag Management ---
+        let currentSongIdForTags = null;
+        let activeSearchFilters = [];
+
+        async function refreshTagLibrary() {
+            const list = document.getElementById('tag-library-list');
+            try {
+                const res = await fetch('/tags', { credentials: 'include' });
+                const tags = await res.json();
+
+                // Update select dropdowns
+                const assignSelect = document.getElementById('assign-tag-id');
+                const searchSelect = document.getElementById('search-tag-select');
+                const tagOptions = tags.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+                assignSelect.innerHTML = tagOptions;
+                searchSelect.innerHTML = tagOptions;
+
+                if (tags.length === 0) {
+                    list.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No tags in database</p>';
+                    return;
+                }
+                list.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">' +
+                    tags.map(t => `<div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                        <span><span style="color: #00d4ff; font-family: monospace;">#${t.id}</span> ${escapeHtml(t.name)}</span>
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="editTag(${t.id}, '${escapeHtml(t.name).replace(/'/g, "\\'")}')" style="width: auto; padding: 2px 6px; font-size: 0.7rem;">Edit</button>
+                            <button onclick="deleteTag(${t.id})" style="width: auto; padding: 2px 6px; font-size: 0.7rem; background: rgba(255,68,68,0.2); color: #ff4444;">Del</button>
+                        </div>
+                    </div>`).join('') + '</div>';
+            } catch (e) {
+                list.innerHTML = `<p style="color: coral; padding: 10px;">Error: ${e.message}</p>`;
+            }
+        }
+
+        async function editTag(id, currentName) {
+            const newName = prompt("Enter new name for tag:", currentName);
+            if (!newName || newName === currentName) return;
+            try {
+                const res = await fetch(`/tags/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name: newName.trim() })
+                });
+                if (res.ok) {
+                    showStatus('tag-status', `✓ Tag updated`, 'success');
+                    refreshTagLibrary();
+                }
+            } catch (e) { alert(e.message); }
+        }
+
+        async function deleteTag(id) {
+            if (!confirm("Delete tag? This removes all song scorings for this tag.")) return;
+            try {
+                const res = await fetch(`/tags/${id}`, { method: 'DELETE', credentials: 'include' });
+                if (res.ok) {
+                    showStatus('tag-status', `✓ Tag deleted`, 'success');
+                    refreshTagLibrary();
+                }
+            } catch (e) { alert(e.message); }
+        }
+
+        async function openTagPanel(songId, songTitle) {
+            currentSongIdForTags = songId;
+            document.getElementById('tag-assignment-title').innerText = `🏷️ Manage Tags: ${songTitle}`;
+            document.getElementById('tag-assignment-panel').classList.remove('hidden');
+            await refreshSongTags();
+            await refreshTagLibrary(); // refresh dropdown
+        }
+
+        function closeTagPanel() {
+            document.getElementById('tag-assignment-panel').classList.add('hidden');
+            currentSongIdForTags = null;
+        }
+
+        async function refreshSongTags() {
+            const list = document.getElementById('song-tags-list');
+            try {
+                const res = await fetch(`/songs/${currentSongIdForTags}/tags`);
+                const tags = await res.json();
+                list.innerHTML = tags.map(t => `
+                    <div style="background: rgba(0,212,255,0.1); padding: 5px 12px; border-radius: 20px; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(0,212,255,0.3);">
+                        <span style="font-weight: bold;">${escapeHtml(t.name)}</span>
+                        <span style="color: #00d4ff;">${t.score.toFixed(2)}</span>
+                        <button onclick="removeSongTag(${t.tag_id})" style="width: auto; background: none; border: none; color: #ff4444; padding: 0; cursor: pointer; font-size: 1.1rem; line-height: 1;">&times;</button>
+                    </div>
+                `).join('');
+            } catch (e) { list.innerHTML = "Error loading tags"; }
+        }
+
+        async function removeSongTag(tagId) {
+            try {
+                const res = await fetch(`/songs/${currentSongIdForTags}/tags/${tagId}`, { method: 'DELETE', credentials: 'include' });
+                if (res.ok) refreshSongTags();
+            } catch (e) { alert(e.message); }
+        }
+
+        document.getElementById('assign-tag-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const tagId = parseInt(document.getElementById('assign-tag-id').value);
+            const score = parseFloat(document.getElementById('assign-tag-score').value);
+            try {
+                const res = await fetch(`/songs/${currentSongIdForTags}/tags`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ tag_id: tagId, score })
+                });
+                if (res.ok) {
+                    refreshSongTags();
+                }
+            } catch (e) { alert(e.message); }
+        });
+
+        function addSearchTag() {
+            const select = document.getElementById('search-tag-select');
+            const name = select.options[select.selectedIndex].text;
+            const score = parseFloat(document.getElementById('search-tag-score').value);
+
+            if (activeSearchFilters.some(f => f.name === name)) return;
+            activeSearchFilters.push({ name, target_score: score });
+            renderSearchFilters();
+        }
+
+        function renderSearchFilters() {
+            const container = document.getElementById('active-search-tags');
+            container.innerHTML = activeSearchFilters.map((f, i) => `
+                <div style="background: #333; padding: 4px 12px; border-radius: 4px; display: flex; gap: 8px;">
+                    ${escapeHtml(f.name)}: ${f.target_score}
+                    <button onclick="removeSearchFilter(${i})" style="width: auto; background: none; border: none; color: #ff4444; padding: 0; cursor: pointer;">&times;</button>
+                </div>
+            `).join('');
+        }
+
+        function removeSearchFilter(i) {
+            activeSearchFilters.splice(i, 1);
+            renderSearchFilters();
+        }
+
+        async function executeTagSearch() {
+            const resultsDiv = document.getElementById('tag-search-results');
+            resultsDiv.innerHTML = "Searching...";
+            try {
+                const res = await fetch('/tags/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(activeSearchFilters)
+                });
+                const results = await res.json();
+                if (results.length === 0) {
+                    resultsDiv.innerHTML = "No matches found.";
+                    return;
+                }
+                resultsDiv.innerHTML = '<table style="width: 100%; font-size: 0.8rem;">' +
+                    '<tr style="border-bottom: 1px solid #444;"><th>Song</th><th>Ref Dist</th></tr>' +
+                    results.map(r => `<tr><td>${escapeHtml(r.title)}</td><td style="color: #00d4ff;">${r.match_error.toFixed(4)}</td></tr>`).join('') +
+                    '</table>';
+            } catch (e) { resultsDiv.innerHTML = "Search failed: " + e.message; }
         }
 
         // Register
@@ -980,6 +1202,25 @@ Cookie optional (anonymous if no cookie)
             } catch (e) {
                 showStatus('artist-status', `✗ ${e.message}`, 'error');
             }
+        });
+
+        // Create Tag
+        document.getElementById('create-tag-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('tag-name-input').value;
+            try {
+                const res = await fetch('/tags', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name })
+                });
+                if (res.ok) {
+                    showStatus('tag-status', `✓ Tag created`, 'success');
+                    document.getElementById('create-tag-form').reset();
+                    refreshTagLibrary();
+                }
+            } catch (e) { alert(e.message); }
         });
 
         // Create Album

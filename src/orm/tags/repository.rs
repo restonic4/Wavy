@@ -137,3 +137,55 @@ pub async fn delete(pool: &SqlitePool, id: i64) -> Result<(), String> {
 
     Ok(())
 }
+pub async fn assign_to_song(
+    pool: &SqlitePool,
+    song_id: i64,
+    tag_id: i64,
+    score: f64,
+) -> Result<(), String> {
+    sqlx::query!(
+        r#"
+        INSERT INTO song_tags (song_id, tag_id, score)
+        VALUES (?, ?, ?)
+        ON CONFLICT(song_id, tag_id) DO UPDATE SET score = excluded.score
+        "#,
+        song_id,
+        tag_id,
+        score
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+pub async fn find_by_song(pool: &SqlitePool, song_id: i64) -> Result<Vec<super::models::TagInfo>, String> {
+    sqlx::query_as!(
+        super::models::TagInfo,
+        r#"
+        SELECT st.tag_id as "tag_id!", t.name, st.score as "score!"
+        FROM song_tags st
+        JOIN tags t ON st.tag_id = t.id
+        WHERE st.song_id = ?
+        ORDER BY st.score DESC
+        "#,
+        song_id
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())
+}
+
+pub async fn remove_from_song(pool: &SqlitePool, song_id: i64, tag_id: i64) -> Result<(), String> {
+    sqlx::query!(
+        "DELETE FROM song_tags WHERE song_id = ? AND tag_id = ?",
+        song_id,
+        tag_id
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}

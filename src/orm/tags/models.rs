@@ -22,6 +22,20 @@ pub struct Tag {
     pub name: String,
 }
 
+#[derive(Debug, FromRow, Serialize, Deserialize)]
+pub struct SongTag {
+    pub song_id: i64,
+    pub tag_id: i64,
+    pub score: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TagInfo {
+    pub tag_id: i64,
+    pub name: String,
+    pub score: f64,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct CreateTagDto {
     pub name: String,
@@ -30,4 +44,10 @@ pub struct CreateTagDto {
 #[derive(Debug, Deserialize)]
 pub struct UpdateTagDto {
     pub name: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AssignTagDto {
+    pub tag_id: i64,
+    pub score: f64,
 }

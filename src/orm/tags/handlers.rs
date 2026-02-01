@@ -6,7 +6,7 @@ use axum::{
 
 use crate::state::AppState;
 use crate::error::AppError;
-use super::models::{CreateTagDto, UpdateTagDto, Tag};
+use super::models::{CreateTagDto, UpdateTagDto, Tag, AssignTagDto, TagInfo, TagRequest, SongSearchResult};
 use super::repository;
 use crate::auth::AdminOnly;
 
@@ -59,6 +59,49 @@ pub async fn delete_tag(
     Path(id): Path<i64>,
 ) -> Result<StatusCode, AppError> {
     repository::delete(&state.db, id)
+        .await
+        .map_err(AppError::InternalServerError)?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn assign_tag(
+    State(state): State<AppState>,
+    _: AdminOnly,
+    Path(song_id): Path<i64>,
+    Json(payload): Json<AssignTagDto>,
+) -> Result<StatusCode, AppError> {
+    repository::assign_to_song(&state.db, song_id, payload.tag_id, payload.score)
+        .await
+        .map_err(AppError::InternalServerError)?;
+    Ok(StatusCode::OK)
+}
+
+pub async fn list_song_tags(
+    State(state): State<AppState>,
+    Path(song_id): Path<i64>,
+) -> Result<Json<Vec<TagInfo>>, AppError> {
+    let tags = repository::find_by_song(&state.db, song_id)
+        .await
+        .map_err(AppError::InternalServerError)?;
+    Ok(Json(tags))
+}
+
+pub async fn search_songs(
+    State(state): State<AppState>,
+    Json(criteria): Json<Vec<TagRequest>>,
+) -> Result<Json<Vec<SongSearchResult>>, AppError> {
+    let results = repository::find_songs_by_vector(&state.db, criteria)
+        .await
+        .map_err(|e| AppError::InternalServerError(e.to_string()))?;
+    Ok(Json(results))
+}
+
+pub async fn remove_tag(
+    State(state): State<AppState>,
+    _: AdminOnly,
+    Path((song_id, tag_id)): Path<(i64, i64)>,
+) -> Result<StatusCode, AppError> {
+    repository::remove_from_song(&state.db, song_id, tag_id)
         .await
         .map_err(AppError::InternalServerError)?;
     Ok(StatusCode::NO_CONTENT)
