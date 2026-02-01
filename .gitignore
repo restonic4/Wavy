@@ -2,3 +2,7 @@
 .idea
 data
 *.mp3
+radio.db
+radio.db-shm
+radio.db-wal
+identifier.sqlite

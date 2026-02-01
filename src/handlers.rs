@@ -10,19 +10,18 @@ use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
-use std::sync::Arc;
 
 // --- API ---
 
 #[derive(Deserialize)]
 pub struct Heartbeat {
-    username: String,
     connect_time: DateTime<Utc>,
     played_seconds: f64,
 }
 
 pub async fn heartbeat(
-    State(state): State<Arc<AppState>>,
+    State(state): State<AppState>,
+    jar: axum_extra::extract::cookie::PrivateCookieJar,
     Json(payload): Json<Heartbeat>,
 ) -> impl IntoResponse {
     let mut station = state.station.write().await;
@@ -48,13 +47,71 @@ pub async fn heartbeat(
         }
     }
 
+    // Check if user is authenticated via cookie, or create/reuse anonymous session
+    let (username, is_authenticated, jar) = {
+        use crate::auth::AUTH_COOKIE_NAME;
+        use axum_extra::extract::cookie::{Cookie, SameSite};
+        use time::Duration;
+        
+        const ANON_COOKIE_NAME: &str = "anon_session";
+        
+        if let Some(cookie) = jar.get(AUTH_COOKIE_NAME) {
+            // Authenticated user
+            if let Ok(user_id) = cookie.value().parse::<i64>() {
+                if let Ok(Some(user)) = crate::orm::users::repository::find_by_id(&state.db, user_id).await {
+                    (user.username, true, jar)
+                } else {
+                    // Cookie exists but user not found - treat as anonymous
+                    let anon_id = jar.get(ANON_COOKIE_NAME)
+                        .map(|c| c.value().to_string())
+                        .unwrap_or_else(|| format!("{}", rand::random::<u32>() % 10000));
+                    
+                    let mut cookie = Cookie::new(ANON_COOKIE_NAME, anon_id.clone());
+                    cookie.set_http_only(true);
+                    cookie.set_path("/");
+                    cookie.set_same_site(SameSite::Lax);
+                    cookie.set_max_age(Duration::days(30));
+                    
+                    (format!("Listener_{}", anon_id), false, jar.add(cookie))
+                }
+            } else {
+                // Invalid auth cookie - treat as anonymous
+                let anon_id = jar.get(ANON_COOKIE_NAME)
+                    .map(|c| c.value().to_string())
+                    .unwrap_or_else(|| format!("{}", rand::random::<u32>() % 10000));
+                
+                let mut cookie = Cookie::new(ANON_COOKIE_NAME, anon_id.clone());
+                cookie.set_http_only(true);
+                cookie.set_path("/");
+                cookie.set_same_site(SameSite::Lax);
+                cookie.set_max_age(Duration::days(30));
+                
+                (format!("Listener_{}", anon_id), false, jar.add(cookie))
+            }
+        } else {
+            // No auth cookie - check for anonymous session cookie
+            let anon_id = jar.get(ANON_COOKIE_NAME)
+                .map(|c| c.value().to_string())
+                .unwrap_or_else(|| format!("{}", rand::random::<u32>() % 10000));
+            
+            let mut cookie = Cookie::new(ANON_COOKIE_NAME, anon_id.clone());
+            cookie.set_http_only(true);
+            cookie.set_path("/");
+            cookie.set_same_site(SameSite::Lax);
+            cookie.set_max_age(Duration::days(30));
+            
+            (format!("Listener_{}", anon_id), false, jar.add(cookie))
+        }
+    };
+
     station.listeners.insert(
-        payload.username.clone(),
+        username.clone(),
         Listener {
-            username: payload.username.clone(),
+            username: username.clone(),
             current_song_id,
             drift_seconds,
             last_seen: now,
+            is_authenticated,
         },
     );
 
@@ -63,10 +120,10 @@ pub async fn heartbeat(
         .listeners
         .retain(|_, v| (now - v.last_seen).num_seconds() < 10);
 
-    StatusCode::OK
+    (jar, StatusCode::OK)
 }
 
-pub async fn get_status(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+pub async fn get_status(State(state): State<AppState>) -> impl IntoResponse {
     let station = state.station.read().await;
 
     Json(serde_json::json!({
@@ -78,7 +135,7 @@ pub async fn get_status(State(state): State<Arc<AppState>>) -> impl IntoResponse
 
 // --- STREAMING ---
 
-pub async fn stream_audio(State(state): State<Arc<AppState>>) -> Response {
+pub async fn stream_audio(State(state): State<AppState>) -> Response {
     let rx = state.tx.subscribe();
 
     // Send burst buffer (catch-up frames for new joiners)

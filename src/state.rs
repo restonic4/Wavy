@@ -5,7 +5,9 @@ use serde::Serialize;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::time::Duration;
+use sqlx::SqlitePool;
 use tokio::sync::{broadcast, RwLock};
+use axum_extra::extract::cookie::Key;
 
 #[derive(Clone, Serialize, Debug)]
 pub struct SongMetadata {
@@ -23,6 +25,7 @@ pub struct Listener {
     pub current_song_id: u64,
     pub drift_seconds: f64,
     pub last_seen: DateTime<Utc>,
+    pub is_authenticated: bool,  // true if real user, false if anonymous
 }
 
 #[derive(Default)]
@@ -43,10 +46,18 @@ pub struct AppState {
     pub tx: broadcast::Sender<AudioFrame>,
     pub buffer_history: Arc<RwLock<VecDeque<AudioFrame>>>,
     pub station: Arc<RwLock<StationData>>,
+    pub db: SqlitePool,
+    pub key: Key,
 }
 
 impl FromRef<AppState> for Arc<RwLock<StationData>> {
     fn from_ref(state: &AppState) -> Self {
         state.station.clone()
+    }
+}
+
+impl FromRef<AppState> for Key {
+    fn from_ref(state: &AppState) -> Self {
+        state.key.clone()
     }
 }

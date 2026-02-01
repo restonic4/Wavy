@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wavy Radio v2</title>
+    <title>Wavy Radio - Complete API Demo</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             color: #eee;
@@ -42,7 +48,9 @@
         }
 
         @media (max-width: 768px) {
-            .grid { grid-template-columns: 1fr; }
+            .grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .panel {
@@ -51,15 +59,13 @@
             border-radius: 12px;
             padding: 20px;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
         }
 
         .panel h2 {
             margin-bottom: 15px;
             color: #00d4ff;
             font-size: 1.3rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
 
         .song-card {
@@ -68,35 +74,11 @@
             padding: 12px;
             margin-bottom: 10px;
             border-radius: 4px;
-            transition: all 0.3s;
-        }
-
-        .song-card:hover {
-            background: rgba(0, 0, 0, 0.3);
         }
 
         .song-card.active {
             border-left-color: #00ff88;
             background: rgba(0, 255, 136, 0.1);
-        }
-
-        .song-title {
-            font-weight: 600;
-            font-size: 1.1rem;
-            margin-bottom: 4px;
-        }
-
-        .song-artist {
-            color: #aaa;
-            font-size: 0.9rem;
-            margin-bottom: 4px;
-        }
-
-        .song-meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.85rem;
-            color: #888;
         }
 
         .listener-row {
@@ -109,11 +91,22 @@
             margin-bottom: 8px;
         }
 
-        .listener-name {
+        .badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
             font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            margin-left: 8px;
+        }
+
+        .badge.auth {
+            background: rgba(0, 212, 255, 0.3);
+            color: #00d4ff;
+        }
+
+        .badge.anon {
+            background: rgba(136, 136, 136, 0.2);
+            color: #888;
         }
 
         .drift {
@@ -123,21 +116,52 @@
             font-size: 0.9rem;
         }
 
-        .drift.good { background: rgba(0, 255, 136, 0.2); color: #00ff88; }
-        .drift.ok { background: rgba(255, 200, 0, 0.2); color: #ffc800; }
-        .drift.bad { background: rgba(255, 68, 68, 0.2); color: #ff4444; }
-
-        .audio-controls {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
+        .drift.good {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
         }
 
-        audio {
+        .drift.ok {
+            background: rgba(255, 200, 0, 0.2);
+            color: #ffc800;
+        }
+
+        .drift.bad {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+        }
+
+        input,
+        button {
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            margin-bottom: 10px;
             width: 100%;
-            margin-top: 10px;
-            border-radius: 8px;
+        }
+
+        button {
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        button.danger {
+            background: linear-gradient(90deg, #ff4444, #ff6666);
+            color: #fff;
         }
 
         .status-badge {
@@ -161,288 +185,728 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
         }
 
-        .login-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.95);
+        .hidden {
+            display: none !important;
+        }
+
+        .status-msg {
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        .status-msg.success {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .status-msg.error {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+        }
+
+        .status-msg.info {
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+        }
+
+        .tabs {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 999;
-        }
-
-        .login-box {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            padding: 40px;
-            border-radius: 16px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            max-width: 400px;
-            width: 90%;
-        }
-
-        .login-box h1 {
-            margin-bottom: 20px;
-        }
-
-        .login-box input {
-            width: 100%;
-            padding: 15px;
-            font-size: 1.2rem;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            background: rgba(0, 0, 0, 0.3);
-            color: white;
-            border-radius: 8px;
+            gap: 10px;
             margin-bottom: 15px;
-            outline: none;
-            transition: border-color 0.3s;
+            flex-wrap: wrap;
         }
 
-        .login-box input:focus {
-            border-color: #00d4ff;
-        }
-
-        .login-box button {
-            width: 100%;
-            padding: 15px;
-            font-size: 1.2rem;
+        .tab {
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border: none;
+            border-radius: 6px;
+            color: #aaa;
+            cursor: pointer;
             font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .tab.active {
             background: linear-gradient(90deg, #00d4ff, #00ff88);
             color: #000;
-            border: none;
-            border-radius: 8px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        details summary {
             cursor: pointer;
-            transition: transform 0.2s;
+            color: #00d4ff;
+            font-weight: 600;
+            margin-bottom: 10px;
         }
 
-        .login-box button:hover {
-            transform: scale(1.05);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #666;
+        details[open] summary {
+            margin-bottom: 15px;
         }
     </style>
 </head>
+
 <body>
-<div id="login-overlay" class="login-overlay">
-    <div class="login-box">
+    <div class="container">
         <h1>🎵 Wavy Radio</h1>
-        <p style="color: #aaa; margin-bottom: 30px;">Enter your username to tune in</p>
-        <input type="text" id="username-input" placeholder="Your Username" autofocus>
-        <button onclick="connect()">Connect</button>
-    </div>
-</div>
+        <p class="subtitle">Complete API Demo • All Endpoints • Cookie-Based Auth • Real-time Streaming</p>
 
-<div class="container">
-    <h1>🎵 Wavy Radio</h1>
-    <p class="subtitle">Frame-synchronized MP3 streaming • Built with Rust + Symphonia</p>
+        <!-- Auth Panel -->
+        <div class="panel" id="auth-panel">
+            <h2>🔐 Authentication & User Management</h2>
+            <div id="auth-status"></div>
 
-    <div class="audio-controls panel">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h2 style="margin: 0;">🎧 Live Stream</h2>
-            <span class="status-badge" id="status-badge">
+            <div id="auth-forms">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('login')">Login</button>
+                    <button class="tab" onclick="switchTab('register')">Register</button>
+                </div>
+
+                <div id="login-tab" class="tab-content active">
+                    <p style="color: #aaa; margin-bottom: 10px; font-size: 0.9rem;">POST /auth/login</p>
+                    <form id="login-form">
+                        <input type="text" id="login-username" placeholder="Username" required>
+                        <input type="password" id="login-password" placeholder="Password" required>
+                        <button type="submit">Login</button>
+                    </form>
+                </div>
+
+                <div id="register-tab" class="tab-content">
+                    <p style="color: #aaa; margin-bottom: 10px; font-size: 0.9rem;">POST /auth/register</p>
+                    <form id="register-form">
+                        <input type="text" id="register-username" placeholder="Username" required>
+                        <input type="password" id="register-password" placeholder="Password" required>
+                        <button type="submit">Register</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="auth-logged-in" class="hidden">
+                <p style="margin-bottom: 15px;">
+                    Logged in as: <strong id="current-username"></strong>
+                    (<span id="current-role" style="color: #00d4ff;"></span>)
+                </p>
+
+                <!-- Username Editor -->
+                <details style="margin-bottom: 15px;">
+                    <summary>✏️ Edit Username (POST /users/{id})</summary>
+                    <form id="edit-username-form" style="margin-top: 10px;">
+                        <input type="text" id="new-username" placeholder="New Username" required>
+                        <button type="submit">Update Username</button>
+                    </form>
+                    <div id="edit-username-status"></div>
+                </details>
+
+                <button class="secondary" onclick="logout()">Logout (POST /auth/logout)</button>
+            </div>
+        </div>
+
+        <!-- Audio Player -->
+        <div class="panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 style="margin: 0;">🎧 Live Stream</h2>
+                <span class="status-badge" id="status-badge">
                     <span class="status-dot"></span>
                     <span id="status-text">Disconnected</span>
                 </span>
+            </div>
+            <audio id="audio" controls></audio>
+            <button onclick="startListening()" style="margin-top: 10px;">Start Listening (GET /stream)</button>
+            <p style="color: #666; font-size: 0.85rem; margin-top: 10px;">
+                Heartbeat: POST /api/heartbeat (every 1s) • Status: GET /api/status
+            </p>
         </div>
-        <audio id="audio" controls></audio>
-        <div style="margin-top: 10px; font-size: 0.9rem; color: #aaa;" id="username-display"></div>
+
+        <!-- Admin Panel (Admin Only) -->
+        <div class="panel hidden" id="admin-panel">
+            <h2>⚙️ Admin Panel - Song Management</h2>
+
+            <div class="tabs">
+                <button class="tab active" onclick="switchAdminTab('upload')">Upload</button>
+                <button class="tab" onclick="switchAdminTab('create')">Create</button>
+                <button class="tab" onclick="switchAdminTab('update')">Update</button>
+                <button class="tab" onclick="switchAdminTab('delete')">Delete</button>
+            </div>
+
+            <!-- Upload Song Tab -->
+            <div id="admin-upload-tab" class="tab-content active">
+                <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
+                    POST /songs/upload - Upload audio file with automatic conversion
+                </p>
+                <form id="upload-form">
+                    <input type="text" id="upload-title" placeholder="Song Title" required>
+                    <input type="number" id="upload-album-id" placeholder="Album ID (optional)">
+                    <input type="file" id="song-file" accept="audio/*" required>
+                    <button type="submit">Upload Song</button>
+                </form>
+                <div id="upload-status"></div>
+            </div>
+
+            <!-- Create Metadata Tab -->
+            <div id="admin-create-tab" class="tab-content">
+                <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
+                    POST /songs - Create song metadata only (no file)
+                </p>
+                <form id="create-song-form">
+                    <input type="text" id="create-title" placeholder="Song Title" required>
+                    <input type="number" id="create-album-id" placeholder="Album ID (optional)">
+                    <button type="submit">Create Song Metadata</button>
+                </form>
+                <div id="create-status"></div>
+            </div>
+
+            <!-- Update Song Tab -->
+            <div id="admin-update-tab" class="tab-content">
+                <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
+                    POST /songs/{id} - Update existing song metadata
+                </p>
+                <form id="update-song-form">
+                    <input type="number" id="update-song-id" placeholder="Song ID" required>
+                    <input type="text" id="update-title" placeholder="New Title (optional)">
+                    <input type="number" id="update-album-id" placeholder="New Album ID (optional)">
+                    <button type="submit">Update Song</button>
+                </form>
+                <div id="update-status"></div>
+            </div>
+
+            <!-- Delete Song Tab -->
+            <div id="admin-delete-tab" class="tab-content">
+                <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
+                    DELETE /songs/{id} - Permanently delete song
+                </p>
+                <form id="delete-song-form">
+                    <input type="number" id="delete-song-id" placeholder="Song ID" required>
+                    <button type="submit" class="danger">Delete Song</button>
+                </form>
+                <div id="delete-status"></div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid">
+            <div class="panel">
+                <h2>📜 Song History</h2>
+                <p style="color: #666; font-size: 0.85rem; margin-bottom: 10px;">GET /api/status</p>
+                <div id="history-list"></div>
+            </div>
+
+            <div class="panel">
+                <h2>👥 Live Listeners (<span id="listener-count">0</span>)</h2>
+                <p style="color: #666; font-size: 0.85rem; margin-bottom: 10px;">GET /api/status (updates every 1s)</p>
+                <div id="listener-list"></div>
+            </div>
+        </div>
+
+        <!-- API Reference -->
+        <div class="panel">
+            <h2>📖 Complete API Reference</h2>
+            <details>
+                <summary>Authentication Endpoints</summary>
+                <pre
+                    style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; margin-top: 10px;">
+POST /auth/register - Register new user
+POST /auth/login - Login (sets cookie)
+POST /auth/logout - Logout (clears cookie)
+GET /auth/me - Get current user
+
+All use credentials: 'include' for cookies
+            </pre>
+            </details>
+
+            <details style="margin-top: 10px;">
+                <summary>User Management</summary>
+                <pre
+                    style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; margin-top: 10px;">
+POST /users/{id} - Update user (self or admin)
+DELETE /users/{id} - Delete user (self or admin)
+
+Users can modify their own account
+Admins can modify any account
+            </pre>
+            </details>
+
+            <details style="margin-top: 10px;">
+                <summary>Song Management (Admin Only)</summary>
+                <pre
+                    style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; margin-top: 10px;">
+GET /songs - List all songs
+POST /songs - Create song metadata
+POST /songs/upload - Upload audio file
+GET /songs/{id} - Get song details
+POST /songs/{id} - Update song
+DELETE /songs/{id} - Delete song
+
+Admin cookie required for POST/DELETE
+            </pre>
+            </details>
+
+            <details style="margin-top: 10px;">
+                <summary>Streaming & Listeners</summary>
+                <pre
+                    style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; margin-top: 10px;">
+GET /stream - MP3 audio stream
+POST /api/heartbeat - Send listener status
+GET /api/status - Get listeners + history
+
+Cookie optional (anonymous if no cookie)
+            </pre>
+            </details>
+        </div>
     </div>
 
-    <div class="grid">
-        <div class="panel">
-            <h2>📜 Song History</h2>
-            <div id="history-list"></div>
-        </div>
+    <script>
+        let serverConnectTime = null;
+        let heartbeatInterval = null;
+        let statusInterval = null;
+        let isAuthenticated = false;
+        let currentUser = null;
 
-        <div class="panel">
-            <h2>👥 Live Listeners (<span id="listener-count">0</span>)</h2>
-            <div id="listener-list"></div>
-        </div>
-    </div>
-</div>
+        const audio = document.getElementById('audio');
 
-<script>
-    let username = "";
-    let serverConnectTime = null;
-    const audio = document.getElementById('audio');
-    let heartbeatInterval = null;
-    let statusInterval = null;
+        // Tab switching
+        function switchTab(tab) {
+            document.querySelectorAll('#auth-forms .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#auth-forms .tab-content').forEach(c => c.classList.remove('active'));
 
-    async function connect() {
-        const input = document.getElementById('username-input');
-        if (!input.value.trim()) {
-            alert('Please enter a username');
-            return;
+            if (tab === 'login') {
+                document.querySelector('#auth-forms .tab:nth-child(1)').classList.add('active');
+                document.getElementById('login-tab').classList.add('active');
+            } else {
+                document.querySelector('#auth-forms .tab:nth-child(2)').classList.add('active');
+                document.getElementById('register-tab').classList.add('active');
+            }
         }
 
-        username = input.value.trim();
+        function switchAdminTab(tab) {
+            document.querySelectorAll('#admin-panel .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#admin-panel .tab-content').forEach(c => c.classList.remove('active'));
 
-        // Sync clock with server
-        try {
-            const res = await fetch('/api/status');
-            const data = await res.json();
-            serverConnectTime = data.server_time;
-        } catch (e) {
-            alert('Failed to connect to server');
-            return;
+            const tabs = {
+                'upload': 0,
+                'create': 1,
+                'update': 2,
+                'delete': 3
+            };
+
+            document.querySelectorAll('#admin-panel .tab')[tabs[tab]].classList.add('active');
+            document.getElementById(`admin-${tab}-tab`).classList.add('active');
         }
 
-        document.getElementById('login-overlay').style.display = 'none';
-        document.getElementById('username-display').textContent = `Listening as: ${username}`;
-        document.getElementById('status-text').textContent = 'Connecting...';
+        // Register
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
 
-        // Start stream
-        audio.src = `/stream?t=${Date.now()}`;
-        audio.load();
+            try {
+                const res = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
 
-        audio.addEventListener('canplay', () => {
-            audio.play().catch(e => {
-                console.log('Autoplay blocked, please press play');
-                document.getElementById('status-text').textContent = 'Ready (click play)';
-            });
-        });
-
-        audio.addEventListener('playing', () => {
-            document.getElementById('status-text').textContent = 'Live';
-        });
-
-        audio.addEventListener('pause', () => {
-            if (!audio.ended) {
-                document.getElementById('status-text').textContent = 'Paused';
+                if (res.ok) {
+                    const user = await res.json();
+                    showLoggedIn(user);
+                } else {
+                    const error = await res.text();
+                    showStatus('auth-status', error, 'error');
+                }
+            } catch (e) {
+                showStatus('auth-status', `Error: ${e.message}`, 'error');
             }
         });
 
-        audio.addEventListener('error', (e) => {
-            console.error('Audio error:', e);
-            document.getElementById('status-text').textContent = 'Error';
+        // Login
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const identity = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const res = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ identity, password })
+                });
+
+                if (res.ok) {
+                    const user = await res.json();
+                    showLoggedIn(user);
+                } else {
+                    showStatus('auth-status', 'Invalid credentials', 'error');
+                }
+            } catch (e) {
+                showStatus('auth-status', `Error: ${e.message}`, 'error');
+            }
         });
 
-        // Start heartbeat (every second)
-        heartbeatInterval = setInterval(sendHeartbeat, 1000);
+        // Edit Username
+        document.getElementById('edit-username-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newUsername = document.getElementById('new-username').value;
 
-        // Start status updates (every second)
-        statusInterval = setInterval(fetchStatus, 1000);
-        fetchStatus(); // Initial fetch
-    }
+            try {
+                const res = await fetch(`/users/${currentUser.id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username: newUsername })
+                });
 
-    async function sendHeartbeat() {
-        if (!username || !serverConnectTime || audio.paused) return;
+                if (res.ok) {
+                    const user = await res.json();
+                    currentUser = user;
+                    document.getElementById('current-username').textContent = user.username;
+                    showStatus('edit-username-status', '✓ Username updated successfully', 'success');
+                    document.getElementById('new-username').value = '';
+                } else {
+                    const error = await res.text();
+                    showStatus('edit-username-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('edit-username-status', `✗ ${e.message}`, 'error');
+            }
+        });
 
-        try {
-            await fetch('/api/heartbeat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: username,
-                    connect_time: serverConnectTime,
-                    played_seconds: audio.currentTime
-                })
+        // Logout
+        async function logout() {
+            try {
+                await fetch('/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                showLoggedOut();
+            } catch (e) {
+                console.error('Logout error:', e);
+            }
+        }
+
+        // Check if already logged in
+        async function checkAuth() {
+            try {
+                const res = await fetch('/auth/me', { credentials: 'include' });
+                if (res.ok) {
+                    const user = await res.json();
+                    showLoggedIn(user);
+                }
+            } catch (e) {
+                // Not logged in, that's fine
+            }
+        }
+
+        function showLoggedIn(user) {
+            isAuthenticated = true;
+            currentUser = user;
+            document.getElementById('auth-forms').classList.add('hidden');
+            document.getElementById('auth-logged-in').classList.remove('hidden');
+            document.getElementById('current-username').textContent = user.username;
+            document.getElementById('current-role').textContent = user.role;
+            showStatus('auth-status', `✓ Logged in as ${user.username}`, 'success');
+
+            // Show admin panel if admin
+            if (user.role === 'admin') {
+                document.getElementById('admin-panel').classList.remove('hidden');
+            }
+        }
+
+        function showLoggedOut() {
+            isAuthenticated = false;
+            currentUser = null;
+            document.getElementById('auth-forms').classList.remove('hidden');
+            document.getElementById('auth-logged-in').classList.add('hidden');
+            document.getElementById('admin-panel').classList.add('hidden');
+            showStatus('auth-status', 'Logged out', 'info');
+        }
+
+        function showStatus(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = `<div class="status-msg ${type}">${message}</div>`;
+        }
+
+        // Upload Song
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            showStatus('upload-status', 'Uploading...', 'info');
+
+            const formData = new FormData();
+            formData.append('file', document.getElementById('song-file').files[0]);
+            formData.append('title', document.getElementById('upload-title').value);
+
+            const albumId = document.getElementById('upload-album-id').value;
+            if (albumId) formData.append('album_id', albumId);
+
+            try {
+                const res = await fetch('/songs/upload', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    showStatus('upload-status', `✓ ${data.message} (ID: ${data.song_id})`, 'success');
+                    document.getElementById('upload-form').reset();
+                } else {
+                    const error = await res.text();
+                    showStatus('upload-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('upload-status', `✗ ${e.message}`, 'error');
+            }
+        });
+
+        // Create Song
+        document.getElementById('create-song-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const payload = {
+                title: document.getElementById('create-title').value
+            };
+
+            const albumId = document.getElementById('create-album-id').value;
+            if (albumId) payload.album_id = parseInt(albumId);
+
+            try {
+                const res = await fetch('/songs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    const song = await res.json();
+                    showStatus('create-status', `✓ Song created (ID: ${song.id})`, 'success');
+                    document.getElementById('create-song-form').reset();
+                } else {
+                    const error = await res.text();
+                    showStatus('create-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('create-status', `✗ ${e.message}`, 'error');
+            }
+        });
+
+        // Update Song
+        document.getElementById('update-song-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const songId = document.getElementById('update-song-id').value;
+            const payload = {};
+
+            const title = document.getElementById('update-title').value;
+            if (title) payload.title = title;
+
+            const albumId = document.getElementById('update-album-id').value;
+            if (albumId) payload.album_id = parseInt(albumId);
+
+            try {
+                const res = await fetch(`/songs/${songId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    const song = await res.json();
+                    showStatus('update-status', `✓ Song updated: ${song.title}`, 'success');
+                } else {
+                    const error = await res.text();
+                    showStatus('update-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('update-status', `✗ ${e.message}`, 'error');
+            }
+        });
+
+        // Delete Song
+        document.getElementById('delete-song-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const songId = document.getElementById('delete-song-id').value;
+
+            if (!confirm(`Are you sure you want to delete song #${songId}?`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/songs/${songId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+
+                if (res.ok) {
+                    showStatus('delete-status', `✓ Song #${songId} deleted`, 'success');
+                    document.getElementById('delete-song-form').reset();
+                } else {
+                    const error = await res.text();
+                    showStatus('delete-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('delete-status', `✗ ${e.message}`, 'error');
+            }
+        });
+
+        // Start listening
+        async function startListening() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                serverConnectTime = data.server_time;
+            } catch (e) {
+                alert('Failed to connect to server');
+                return;
+            }
+
+            document.getElementById('status-text').textContent = 'Connecting...';
+
+            audio.src = `/stream?t=${Date.now()}`;
+            audio.load();
+
+            audio.addEventListener('canplay', () => {
+                audio.play().catch(e => {
+                    console.log('Autoplay blocked');
+                    document.getElementById('status-text').textContent = 'Ready (click play)';
+                });
             });
-        } catch (e) {
-            console.error('Heartbeat failed:', e);
-        }
-    }
 
-    async function fetchStatus() {
-        try {
-            const res = await fetch('/api/status');
-            const data = await res.json();
-            renderHistory(data.history);
-            renderListeners(data.listeners);
-        } catch (e) {
-            console.error('Status fetch failed:', e);
-        }
-    }
+            audio.addEventListener('playing', () => {
+                document.getElementById('status-text').textContent = 'Live';
+            });
 
-    function renderHistory(history) {
-        const container = document.getElementById('history-list');
-        if (history.length === 0) {
-            container.innerHTML = '<div class="empty-state">No songs played yet</div>';
-            return;
+            // Start heartbeat
+            heartbeatInterval = setInterval(sendHeartbeat, 1000);
+            statusInterval = setInterval(fetchStatus, 1000);
+            fetchStatus();
         }
 
-        container.innerHTML = '';
-        [...history].reverse().forEach((song, index) => {
-            const startTime = new Date(song.started_at);
-            const isActive = index === 0;
+        async function sendHeartbeat() {
+            if (!serverConnectTime || audio.paused) return;
 
-            container.innerHTML += `
-                    <div class="song-card ${isActive ? 'active' : ''}">
-                        <div class="song-title">${escapeHtml(song.title)}</div>
-                        ${song.artist ? `<div class="song-artist">${escapeHtml(song.artist)}</div>` : ''}
-                        <div class="song-meta">
-                            <span>ID #${song.id}</span>
-                            <span>${startTime.toLocaleTimeString()}</span>
-                            <span>${song.duration_seconds.toFixed(1)}s @ ${song.sample_rate}Hz</span>
-                        </div>
-                    </div>
-                `;
-        });
-    }
-
-    function renderListeners(listeners) {
-        const container = document.getElementById('listener-list');
-        document.getElementById('listener-count').textContent = listeners.length;
-
-        if (listeners.length === 0) {
-            container.innerHTML = '<div class="empty-state">No listeners yet</div>';
-            return;
+            try {
+                await fetch('/api/heartbeat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        connect_time: serverConnectTime,
+                        played_seconds: audio.currentTime
+                    })
+                });
+            } catch (e) {
+                console.error('Heartbeat failed:', e);
+            }
         }
 
-        // Sort by drift (best sync first)
-        listeners.sort((a, b) => Math.abs(a.drift_seconds) - Math.abs(b.drift_seconds));
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                renderHistory(data.history);
+                renderListeners(data.listeners);
+            } catch (e) {
+                console.error('Status fetch failed:', e);
+            }
+        }
 
-        container.innerHTML = '';
-        listeners.forEach(listener => {
-            const drift = listener.drift_seconds;
-            const absDrift = Math.abs(drift);
-            let driftClass = 'good';
-            if (absDrift > 1.0) driftClass = 'bad';
-            else if (absDrift > 0.5) driftClass = 'ok';
+        function renderHistory(history) {
+            const container = document.getElementById('history-list');
+            if (history.length === 0) {
+                container.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No songs played yet</div>';
+                return;
+            }
 
-            const driftText = drift > 0
-                ? `+${drift.toFixed(2)}s`
-                : `${drift.toFixed(2)}s`;
+            container.innerHTML = '';
+            [...history].reverse().forEach((song, index) => {
+                const isActive = index === 0;
+                container.innerHTML += `
+            <div class="song-card ${isActive ? 'active' : ''}">
+                <div style="font-weight: 600; margin-bottom: 4px;">${escapeHtml(song.title)}</div>
+                ${song.artist ? `<div style="color: #aaa; font-size: 0.9rem;">${escapeHtml(song.artist)}</div>` : ''}
+                <div style="color: #666; font-size: 0.85rem; margin-top: 4px;">
+                    ID #${song.id} • ${song.duration_seconds.toFixed(1)}s
+                </div>
+            </div>
+        `;
+            });
+        }
 
-            container.innerHTML += `
-                    <div class="listener-row">
-                        <span class="listener-name">
-                            ${escapeHtml(listener.username)}
-                            <span style="color: #666; font-size: 0.85rem;">#${listener.current_song_id}</span>
-                        </span>
-                        <span class="drift ${driftClass}">${driftText}</span>
-                    </div>
-                `;
-        });
-    }
+        function renderListeners(listeners) {
+            const container = document.getElementById('listener-list');
+            document.getElementById('listener-count').textContent = listeners.length;
 
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
+            if (listeners.length === 0) {
+                container.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No listeners yet</div>';
+                return;
+            }
 
-    // Handle page unload
-    window.addEventListener('beforeunload', () => {
-        if (heartbeatInterval) clearInterval(heartbeatInterval);
-        if (statusInterval) clearInterval(statusInterval);
-    });
+            // Sort by drift (best sync first)
+            listeners.sort((a, b) => Math.abs(a.drift_seconds) - Math.abs(b.drift_seconds));
 
-    // Enter key on login
-    document.getElementById('username-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') connect();
-    });
-</script>
+            container.innerHTML = '';
+            listeners.forEach(listener => {
+                const badge = listener.is_authenticated
+                    ? '<span class="badge auth">✓ User</span>'
+                    : '<span class="badge anon">Anonymous</span>';
+
+                // Calculate drift display
+                const drift = listener.drift_seconds;
+                const absDrift = Math.abs(drift);
+                let driftClass = 'good';
+                if (absDrift > 1.0) driftClass = 'bad';
+                else if (absDrift > 0.5) driftClass = 'ok';
+
+                const driftText = drift > 0
+                    ? `+${drift.toFixed(2)}s`
+                    : `${drift.toFixed(2)}s`;
+
+                container.innerHTML += `
+            <div class="listener-row">
+                <span>
+                    ${escapeHtml(listener.username)}
+                    ${badge}
+                    <span style="color: #666; font-size: 0.85rem; margin-left: 8px;">#${listener.current_song_id}</span>
+                </span>
+                <span class="drift ${driftClass}">${driftText}</span>
+            </div>
+        `;
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize
+        checkAuth();
+    </script>
 </body>
+
 </html>
