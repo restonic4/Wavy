@@ -215,3 +215,6 @@ sqlx migrate run --database-url "sqlite:radio.db"
 - Radios (por ejemplo, una radio podria ser programable, tipo, que a ciertas horas pone x tipo de musica y en otras otra, o que tambien vaya por estaciones, que cuando se acerca navidad cada vez son mas navideñas) (podria ir como con atributos, como "navideña" y tenga puntuacion unica, osea, que en un menu me vayan saliendo las canciones y me ponga dos y me pide elegir cual es mas navideña)
 
 La cosa es que a lo mejor quiero escuchar una radio de estas de estacion o por hora, pero claro, a lo mejor quiero algo energetico, o algo de chill, o algo de fondo, o algo de nintendo o de un juego en concreto
+
+ffmpeg para normalizar decibelios de musica?
+realizar hearthbeats mas frecuentes? (no se, a lo mejor le suma un minuto al contador?)
