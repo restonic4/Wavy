@@ -26,6 +26,12 @@ pub struct Listener {
     pub drift_seconds: f64,
     pub last_seen: DateTime<Utc>,
     pub is_authenticated: bool,  // true if real user, false if anonymous
+    pub connected_at: DateTime<Utc>,
+    pub last_db_update: DateTime<Utc>,
+    #[serde(skip)]
+    pub seconds_since_last_update: i64,
+    #[serde(skip)]
+    pub base_total_listen_time: i64,
 }
 
 #[derive(Default)]

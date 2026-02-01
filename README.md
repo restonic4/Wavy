@@ -195,6 +195,10 @@ Values > 5s indicate network/processing issues
 | **Buffer** | Packet count | Time-based (seconds) |
 | **Library** | lofty (metadata only) | symphonia (full parsing) |
 
+## Complete API Documentation
+
+For detailed information on all available endpoints, request structures, and authentication, please refer to the [API Documentation](API.md).
+
 ## License
 
 MIT - Do whatever you want with it!

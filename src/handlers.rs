@@ -48,7 +48,7 @@ pub async fn heartbeat(
     }
 
     // Check if user is authenticated via cookie, or create/reuse anonymous session
-    let (username, is_authenticated, jar) = {
+    let (username, is_authenticated, user_id, jar) = {
         use crate::auth::AUTH_COOKIE_NAME;
         use axum_extra::extract::cookie::{Cookie, SameSite};
         use time::Duration;
@@ -57,9 +57,9 @@ pub async fn heartbeat(
         
         if let Some(cookie) = jar.get(AUTH_COOKIE_NAME) {
             // Authenticated user
-            if let Ok(user_id) = cookie.value().parse::<i64>() {
-                if let Ok(Some(user)) = crate::orm::users::repository::find_by_id(&state.db, user_id).await {
-                    (user.username, true, jar)
+            if let Ok(uid) = cookie.value().parse::<i64>() {
+                if let Ok(Some(user)) = crate::orm::users::repository::find_by_id(&state.db, uid).await {
+                    (user.username, true, Some(uid), jar)
                 } else {
                     // Cookie exists but user not found - treat as anonymous
                     let anon_id = jar.get(ANON_COOKIE_NAME)
@@ -72,7 +72,7 @@ pub async fn heartbeat(
                     cookie.set_same_site(SameSite::Lax);
                     cookie.set_max_age(Duration::days(30));
                     
-                    (format!("Listener_{}", anon_id), false, jar.add(cookie))
+                    (format!("Listener_{}", anon_id), false, None, jar.add(cookie))
                 }
             } else {
                 // Invalid auth cookie - treat as anonymous
@@ -86,7 +86,7 @@ pub async fn heartbeat(
                 cookie.set_same_site(SameSite::Lax);
                 cookie.set_max_age(Duration::days(30));
                 
-                (format!("Listener_{}", anon_id), false, jar.add(cookie))
+                (format!("Listener_{}", anon_id), false, None, jar.add(cookie))
             }
         } else {
             // No auth cookie - check for anonymous session cookie
@@ -100,27 +100,84 @@ pub async fn heartbeat(
             cookie.set_same_site(SameSite::Lax);
             cookie.set_max_age(Duration::days(30));
             
-            (format!("Listener_{}", anon_id), false, jar.add(cookie))
+            (format!("Listener_{}", anon_id), false, None, jar.add(cookie))
         }
     };
 
-    station.listeners.insert(
-        username.clone(),
+    let existing_listener = station.listeners.get(&username).cloned();
+
+    let mut listener = if let Some(mut l) = existing_listener {
+        let diff = (now - l.last_seen).num_seconds().max(0);
+        l.seconds_since_last_update += diff;
+        l.last_seen = now;
+        l.drift_seconds = drift_seconds;
+        l.current_song_id = current_song_id;
+        l
+    } else {
+        // Fetch base lifetime time for authenticated users
+        let base_total = if let Some(uid) = user_id {
+            crate::orm::users::repository::find_by_id(&state.db, uid)
+                .await
+                .ok()
+                .flatten()
+                .map(|u| u.total_listen_time)
+                .unwrap_or(0)
+        } else {
+            0
+        };
+
         Listener {
             username: username.clone(),
             current_song_id,
             drift_seconds,
             last_seen: now,
             is_authenticated,
-        },
-    );
+            connected_at: now,
+            last_db_update: now,
+            seconds_since_last_update: 0,
+            base_total_listen_time: base_total,
+        }
+    };
 
-    // Clean up stale listeners (haven't sent heartbeat in 10 seconds)
+    if is_authenticated {
+        if let Some(uid) = user_id {
+            if listener.seconds_since_last_update >= 30 {
+                let _ = crate::orm::users::repository::increment_listen_time(
+                    &state.db,
+                    uid,
+                    listener.seconds_since_last_update,
+                )
+                .await;
+                listener.seconds_since_last_update = 0;
+                listener.last_db_update = now;
+                
+                // Refresh base total time after update to stay accurate
+                if let Ok(Some(user)) = crate::orm::users::repository::find_by_id(&state.db, uid).await {
+                    listener.base_total_listen_time = user.total_listen_time;
+                }
+            }
+        }
+    }
+
+    let session_seconds = (now - listener.connected_at).num_seconds();
+    let total_seconds = listener.base_total_listen_time + listener.seconds_since_last_update;
+
+    station.listeners.insert(username.clone(), listener);
+
+    // Clean up stale listeners (haven't sent heartbeat in 15 seconds - increased from 10 to give more breathing room)
     station
         .listeners
-        .retain(|_, v| (now - v.last_seen).num_seconds() < 10);
+        .retain(|_, v| (now - v.last_seen).num_seconds() < 15);
 
-    (jar, StatusCode::OK)
+    (
+        jar,
+        Json(serde_json::json!({
+            "status": "ok",
+            "session_seconds": session_seconds,
+            "total_seconds": total_seconds,
+            "username": username,
+        })),
+    )
 }
 
 pub async fn get_status(State(state): State<AppState>) -> impl IntoResponse {

@@ -25,6 +25,7 @@ pub async fn upload_song(
     mut multipart: Multipart,
 ) -> Result<(StatusCode, Json<UploadResponse>), AppError> {
     let mut file_data: Option<Vec<u8>> = None;
+    let mut image_data: Option<Vec<u8>> = None;
     let mut title: Option<String> = None;
     let mut album_id: Option<i64> = None;
     let mut artist_ids: Vec<i64> = Vec::new();
@@ -40,6 +41,11 @@ pub async fn upload_song(
                 let data = field.bytes().await
                     .map_err(|e| AppError::BadRequest(format!("Failed to read file: {}", e)))?;
                 file_data = Some(data.to_vec());
+            }
+            "image" => {
+                let data = field.bytes().await
+                    .map_err(|e| AppError::BadRequest(format!("Failed to read image: {}", e)))?;
+                image_data = Some(data.to_vec());
             }
             "title" => {
                 let text = field.text().await
@@ -113,6 +119,14 @@ pub async fn upload_song(
 
     // Clean up raw file after successful conversion
     let _ = fs::remove_file(&raw_path).await;
+
+    // Handle image if provided
+    if let Some(img_data) = image_data {
+        let img_path = PathBuf::from(format!("data/{}.png", song_id)); // Defaulting to png for now, or we could detect
+        if let Ok(_) = fs::write(&img_path, &img_data).await {
+            let _ = repository::set_has_image(&state.db, song_id, true).await;
+        }
+    }
 
     Ok((StatusCode::CREATED, Json(UploadResponse {
         song_id,

@@ -13,6 +13,9 @@ pub struct TagRequest {
 pub struct SongSearchResult {
     pub id: i64,
     pub title: String,
+    pub artist_names: Option<String>,
+    pub album_title: Option<String>,
+    pub has_image: bool,
     pub match_error: f64,
 }
 

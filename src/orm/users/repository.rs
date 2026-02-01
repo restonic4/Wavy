@@ -20,7 +20,7 @@ pub async fn create(pool: &SqlitePool, dto: CreateUserDto) -> Result<User, Strin
         r#"
         INSERT INTO users (username, password_hash, role)
         VALUES (?, ?, 'user')
-        RETURNING id as "id!", username, password_hash, artist_id, role
+        RETURNING id as "id!", username, password_hash, artist_id, role, total_listen_time
         "#,
         dto.username,
         password_hash
@@ -36,7 +36,7 @@ pub async fn find_by_username(pool: &SqlitePool, username: &str) -> Result<Optio
     let user = sqlx::query_as!(
         User,
         r#"
-        SELECT id as "id!", username, password_hash, artist_id, role
+        SELECT id as "id!", username, password_hash, artist_id, role, total_listen_time
         FROM users
         WHERE username = ?
         "#,
@@ -53,7 +53,7 @@ pub async fn find_by_id(pool: &SqlitePool, id: i64) -> Result<Option<User>, Stri
     let user = sqlx::query_as!(
         User,
         r#"
-        SELECT id as "id!", username, password_hash, artist_id, role
+        SELECT id as "id!", username, password_hash, artist_id, role, total_listen_time
         FROM users
         WHERE id = ?
         "#,
@@ -105,7 +105,7 @@ pub async fn update(pool: &SqlitePool, id: i64, dto: UpdateUserDto) -> Result<Us
 
     qb.push(" WHERE id = ");
     qb.push_bind(id);
-    qb.push(" RETURNING id, username, password_hash, artist_id, role");
+    qb.push(" RETURNING id, username, password_hash, artist_id, role, total_listen_time");
 
     let user = qb.build_query_as::<User>()
         .fetch_optional(pool)
@@ -126,4 +126,33 @@ pub async fn delete(pool: &SqlitePool, id: i64) -> Result<(), String> {
     .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+pub async fn increment_listen_time(pool: &SqlitePool, id: i64, seconds: i64) -> Result<(), String> {
+    sqlx::query!(
+        "UPDATE users SET total_listen_time = total_listen_time + ? WHERE id = ?",
+        seconds,
+        id
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+pub async fn get_top_listeners(pool: &SqlitePool, limit: i64) -> Result<Vec<User>, String> {
+    sqlx::query_as!(
+        User,
+        r#"
+        SELECT id as "id!", username, password_hash, artist_id, role, total_listen_time
+        FROM users
+        ORDER BY total_listen_time DESC
+        LIMIT ?
+        "#,
+        limit
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())
 }

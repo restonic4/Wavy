@@ -13,5 +13,6 @@ pub fn router() -> Router<AppState> {
         .route("/auth/login", post(handlers::login))
         .route("/auth/logout", post(handlers::logout))
         .route("/auth/me", get(handlers::get_me))
+        .route("/users/leaderboard", get(handlers::get_leaderboard))
         .route("/users/{id}", post(handlers::update_user).delete(handlers::delete_user))
 }

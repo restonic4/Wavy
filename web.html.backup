@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wavy Radio - Demo & Reference</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #eee;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #aaa;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .panel h2 {
+            margin-bottom: 15px;
+            color: #00d4ff;
+            font-size: 1.3rem;
+        }
+
+        .song-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 3px solid #555;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .song-card.active {
+            border-left-color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .listener-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .badge.auth {
+            background: rgba(0, 212, 255, 0.3);
+            color: #00d4ff;
+        }
+
+        .badge.anon {
+            background: rgba(136, 136, 136, 0.2);
+            color: #888;
+        }
+
+        .drift {
+            font-family: 'Courier New', monospace;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .drift.good {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .drift.ok {
+            background: rgba(255, 200, 0, 0.2);
+            color: #ffc800;
+        }
+
+        .drift.bad {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+        }
+
+        input,
+        button {
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        button {
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .status-msg {
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        .status-msg.success {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .status-msg.error {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+        }
+
+        .status-msg.info {
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border: none;
+            border-radius: 6px;
+            color: #aaa;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .tab.active {
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            color: #000;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎵 Wavy Radio</h1>
+        <p class="subtitle">Demo & Reference for Frontend Developers • Cookie-Based Auth • Real-time Streaming</p>
+
+        <!-- Auth Panel -->
+        <div class="panel" id="auth-panel">
+            <h2>🔐 Authentication</h2>
+            <div id="auth-status"></div>
+
+            <div id="auth-forms">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('login')">Login</button>
+                    <button class="tab" onclick="switchTab('register')">Register</button>
+                </div>
+
+                <div id="login-tab" class="tab-content active">
+                    <form id="login-form">
+                        <input type="text" id="login-username" placeholder="Username" required>
+                        <input type="password" id="login-password" placeholder="Password" required>
+                        <button type="submit">Login</button>
+                    </form>
+                </div>
+
+                <div id="register-tab" class="tab-content">
+                    <form id="register-form">
+                        <input type="text" id="register-username" placeholder="Username" required>
+                        <input type="password" id="register-password" placeholder="Password" required>
+                        <button type="submit">Register</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="auth-logged-in" class="hidden">
+                <p style="margin-bottom: 10px;">Logged in as: <strong id="current-username"></strong></p>
+                <button class="secondary" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <!-- Audio Player -->
+        <div class="panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 style="margin: 0;">🎧 Live Stream</h2>
+                <span class="status-badge" id="status-badge">
+                    <span class="status-dot"></span>
+                    <span id="status-text">Disconnected</span>
+                </span>
+            </div>
+            <audio id="audio" controls></audio>
+            <button onclick="startListening()" style="margin-top: 10px;">Start Listening</button>
+        </div>
+
+        <!-- Upload Panel (Admin Only) -->
+        <div class="panel hidden" id="upload-panel">
+            <h2>🎵 Upload Song (Admin Only)</h2>
+            <form id="upload-form">
+                <input type="text" id="song-title" placeholder="Song Title" required>
+                <input type="number" id="song-album-id" placeholder="Album ID (optional)">
+                <input type="file" id="song-file" accept="audio/*" required>
+                <button type="submit">Upload Song</button>
+            </form>
+            <div id="upload-status"></div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid">
+            <div class="panel">
+                <h2>📜 Song History</h2>
+                <div id="history-list"></div>
+            </div>
+
+            <div class="panel">
+                <h2>👥 Live Listeners (<span id="listener-count">0</span>)</h2>
+                <div id="listener-list"></div>
+            </div>
+        </div>
+
+        <!-- API Reference -->
+        <div class="panel">
+            <h2>📖 API Reference for Frontend Devs</h2>
+            <details>
+                <summary style="cursor: pointer; color: #00d4ff; margin-bottom: 10px; font-weight: 600;">Authentication
+                    Endpoints</summary>
+                <pre
+                    style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem;">
+POST /auth/register
+Body: { "username": "user", "password": "pass" }
+Response: Sets cookie, returns user object
+
+POST /auth/login
+Body: { "identity": "user", "password": "pass" }
+Response: Sets cookie, returns user object
+
+POST /auth/logout
+Response: Clears cookie
+
+GET /auth/me
+Response: Current user (requires cookie)
+            </pre>
+            </details>
+
+            <details>
+                <summary style="cursor: pointer; color: #00d4ff; margin: 10px 0; font-weight: 600;">Song Upload (Admin)
+                </summary>
+                <pre
+                    style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem;">
+POST /songs/upload
+Content-Type: multipart/form-data
+Cookie: Required (admin role)
+
+Form Fields:
+- file: Audio file (any format)
+- title: Song title
+- album_id: Optional album ID
+
+Response: { "song_id": 123, "message": "..." }
+            </pre>
+            </details>
+
+            <details>
+                <summary style="cursor: pointer; color: #00d4ff; margin: 10px 0; font-weight: 600;">Listener Tracking
+                </summary>
+                <pre
+                    style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem;">
+POST /api/heartbeat
+Body: {
+  "connect_time": "2026-02-01T12:00:00Z",
+  "played_seconds": 42.5
+}
+Note: Uses cookie to identify user
+      Anonymous if no cookie
+
+GET /api/status
+Response: {
+  "listeners": [{
+    "username": "john_doe",
+    "is_authenticated": true,  // ← Cookie-based!
+    "current_song_id": 42,
+    "drift_seconds": 0.15
+  }]
+}
+            </pre>
+            </details>
+        </div>
+    </div>
+
+    <script>
+        let serverConnectTime = null;
+        let heartbeatInterval = null;
+        let statusInterval = null;
+        let isAuthenticated = false;
+        let currentUser = null;
+
+        const audio = document.getElementById('audio');
+
+        // Tab switching
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            if (tab === 'login') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('login-tab').classList.add('active');
+            } else {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('register-tab').classList.add('active');
+            }
+        }
+
+        // Register
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+
+            try {
+                const res = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (res.ok) {
+                    const user = await res.json();
+                    showLoggedIn(user);
+                } else {
+                    const error = await res.text();
+                    showStatus('auth-status', error, 'error');
+                }
+            } catch (e) {
+                showStatus('auth-status', `Error: ${e.message}`, 'error');
+            }
+        });
+
+        // Login
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const identity = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const res = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ identity, password })
+                });
+
+                if (res.ok) {
+                    const user = await res.json();
+                    showLoggedIn(user);
+                } else {
+                    showStatus('auth-status', 'Invalid credentials', 'error');
+                }
+            } catch (e) {
+                showStatus('auth-status', `Error: ${e.message}`, 'error');
+            }
+        });
+
+        // Logout
+        async function logout() {
+            try {
+                await fetch('/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                showLoggedOut();
+            } catch (e) {
+                console.error('Logout error:', e);
+            }
+        }
+
+        // Check if already logged in
+        async function checkAuth() {
+            try {
+                const res = await fetch('/auth/me', { credentials: 'include' });
+                if (res.ok) {
+                    const user = await res.json();
+                    showLoggedIn(user);
+                }
+            } catch (e) {
+                // Not logged in, that's fine
+            }
+        }
+
+        function showLoggedIn(user) {
+            isAuthenticated = true;
+            currentUser = user;
+            document.getElementById('auth-forms').classList.add('hidden');
+            document.getElementById('auth-logged-in').classList.remove('hidden');
+            document.getElementById('current-username').textContent = user.username;
+            showStatus('auth-status', `✓ Logged in as ${user.username}`, 'success');
+
+            // Show upload panel if admin
+            if (user.role === 'admin') {
+                document.getElementById('upload-panel').classList.remove('hidden');
+            }
+        }
+
+        function showLoggedOut() {
+            isAuthenticated = false;
+            currentUser = null;
+            document.getElementById('auth-forms').classList.remove('hidden');
+            document.getElementById('auth-logged-in').classList.add('hidden');
+            document.getElementById('upload-panel').classList.add('hidden');
+            showStatus('auth-status', 'Logged out', 'info');
+        }
+
+        function showStatus(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = `<div class="status-msg ${type}">${message}</div>`;
+        }
+
+        // Upload
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            showStatus('upload-status', 'Uploading...', 'info');
+
+            const formData = new FormData();
+            formData.append('file', document.getElementById('song-file').files[0]);
+            formData.append('title', document.getElementById('song-title').value);
+
+            const albumId = document.getElementById('song-album-id').value;
+            if (albumId) formData.append('album_id', albumId);
+
+            try {
+                const res = await fetch('/songs/upload', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    showStatus('upload-status', `✓ ${data.message} (ID: ${data.song_id})`, 'success');
+                    document.getElementById('upload-form').reset();
+                } else {
+                    const error = await res.text();
+                    showStatus('upload-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('upload-status', `✗ ${e.message}`, 'error');
+            }
+        });
+
+        // Start listening
+        async function startListening() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                serverConnectTime = data.server_time;
+            } catch (e) {
+                alert('Failed to connect to server');
+                return;
+            }
+
+            document.getElementById('status-text').textContent = 'Connecting...';
+
+            audio.src = `/stream?t=${Date.now()}`;
+            audio.load();
+
+            audio.addEventListener('canplay', () => {
+                audio.play().catch(e => {
+                    console.log('Autoplay blocked');
+                    document.getElementById('status-text').textContent = 'Ready (click play)';
+                });
+            });
+
+            audio.addEventListener('playing', () => {
+                document.getElementById('status-text').textContent = 'Live';
+            });
+
+            // Start heartbeat
+            heartbeatInterval = setInterval(sendHeartbeat, 1000);
+            statusInterval = setInterval(fetchStatus, 1000);
+            fetchStatus();
+        }
+
+        async function sendHeartbeat() {
+            if (!serverConnectTime || audio.paused) return;
+
+            try {
+                await fetch('/api/heartbeat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        connect_time: serverConnectTime,
+                        played_seconds: audio.currentTime
+                    })
+                });
+            } catch (e) {
+                console.error('Heartbeat failed:', e);
+            }
+        }
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                renderHistory(data.history);
+                renderListeners(data.listeners);
+            } catch (e) {
+                console.error('Status fetch failed:', e);
+            }
+        }
+
+        function renderHistory(history) {
+            const container = document.getElementById('history-list');
+            if (history.length === 0) {
+                container.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No songs played yet</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            [...history].reverse().forEach((song, index) => {
+                const isActive = index === 0;
+                container.innerHTML += `
+            <div class="song-card ${isActive ? 'active' : ''}">
+                <div style="font-weight: 600; margin-bottom: 4px;">${escapeHtml(song.title)}</div>
+                ${song.artist ? `<div style="color: #aaa; font-size: 0.9rem;">${escapeHtml(song.artist)}</div>` : ''}
+                <div style="color: #666; font-size: 0.85rem; margin-top: 4px;">
+                    ID #${song.id} • ${song.duration_seconds.toFixed(1)}s
+                </div>
+            </div>
+        `;
+            });
+        }
+
+        function renderListeners(listeners) {
+            const container = document.getElementById('listener-list');
+            document.getElementById('listener-count').textContent = listeners.length;
+
+            if (listeners.length === 0) {
+                container.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No listeners yet</div>';
+                return;
+            }
+
+            // Sort by drift (best sync first)
+            listeners.sort((a, b) => Math.abs(a.drift_seconds) - Math.abs(b.drift_seconds));
+
+            container.innerHTML = '';
+            listeners.forEach(listener => {
+                const badge = listener.is_authenticated
+                    ? '<span class="badge auth">✓ User</span>'
+                    : '<span class="badge anon">Anonymous</span>';
+
+                // Calculate drift display
+                const drift = listener.drift_seconds;
+                const absDrift = Math.abs(drift);
+                let driftClass = 'good';
+                if (absDrift > 1.0) driftClass = 'bad';
+                else if (absDrift > 0.5) driftClass = 'ok';
+
+                const driftText = drift > 0
+                    ? `+${drift.toFixed(2)}s`
+                    : `${drift.toFixed(2)}s`;
+
+                container.innerHTML += `
+            <div class="listener-row">
+                <span>
+                    ${escapeHtml(listener.username)}
+                    ${badge}
+                    <span style="color: #666; font-size: 0.85rem; margin-left: 8px;">#${listener.current_song_id}</span>
+                </span>
+                <span class="drift ${driftClass}">${driftText}</span>
+            </div>
+        `;
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize
+        checkAuth();
+    </script>
+</body>
+
+</html>

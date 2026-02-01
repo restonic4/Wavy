@@ -24,6 +24,7 @@ pub struct User {
     pub password_hash: String,
     pub artist_id: Option<i64>,
     pub role: String,
+    pub total_listen_time: i64,
 }
 
 #[derive(Debug, Deserialize)]

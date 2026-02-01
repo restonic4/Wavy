@@ -130,3 +130,13 @@ pub async fn delete_user(
 
     Ok(StatusCode::NO_CONTENT)
 }
+
+pub async fn get_leaderboard(
+    State(state): State<AppState>,
+) -> Result<AxumJson<Vec<User>>, AppError> {
+    let top_users = repository::get_top_listeners(&state.db, 10)
+        .await
+        .map_err(AppError::InternalServerError)?;
+
+    Ok(AxumJson(top_users))
+}

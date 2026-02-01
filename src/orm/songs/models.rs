@@ -8,6 +8,7 @@ pub struct Song {
     pub album_id: Option<i64>,
     pub album_title: Option<String>,
     pub artist_names: Option<String>, // Aggregated from the song_artists join table
+    pub has_image: bool,
 }
 
 #[derive(Debug, Deserialize)]

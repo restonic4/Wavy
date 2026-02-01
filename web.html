@@ -595,61 +595,6 @@
             </div>
         </div>
 
-        <!-- API Reference -->
-        <div class="panel">
-            <h2>📖 Complete API Reference</h2>
-            <details>
-                <summary>Authentication Endpoints</summary>
-                <pre
-                    style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; margin-top: 10px;">
-POST /auth/register - Register new user
-POST /auth/login - Login (sets cookie)
-POST /auth/logout - Logout (clears cookie)
-GET /auth/me - Get current user
-
-All use credentials: 'include' for cookies
-            </pre>
-            </details>
-
-            <details style="margin-top: 10px;">
-                <summary>User Management</summary>
-                <pre
-                    style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; margin-top: 10px;">
-POST /users/{id} - Update user (self or admin)
-DELETE /users/{id} - Delete user (self or admin)
-
-Users can modify their own account
-Admins can modify any account
-            </pre>
-            </details>
-
-            <details style="margin-top: 10px;">
-                <summary>Song Management (Admin Only)</summary>
-                <pre
-                    style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; margin-top: 10px;">
-GET /songs - List all songs
-POST /songs - Create song metadata
-POST /songs/upload - Upload audio file
-GET /songs/{id} - Get song details
-POST /songs/{id} - Update song
-DELETE /songs/{id} - Delete song
-
-Admin cookie required for POST/DELETE
-            </pre>
-            </details>
-
-            <details style="margin-top: 10px;">
-                <summary>Streaming & Listeners</summary>
-                <pre
-                    style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; margin-top: 10px;">
-GET /stream - MP3 audio stream
-POST /api/heartbeat - Send listener status
-GET /api/status - Get listeners + history
-
-Cookie optional (anonymous if no cookie)
-            </pre>
-            </details>
-        </div>
     </div>
 
     <script>

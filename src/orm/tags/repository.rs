@@ -17,8 +17,11 @@ pub async fn find_songs_by_vector(
     let mut query_builder: QueryBuilder<Sqlite> = QueryBuilder::new(
         r#"
         SELECT 
-            s.id, 
+            s.id as id, 
             s.title,
+            (SELECT GROUP_CONCAT(a.name, ', ') FROM artists a JOIN song_artists sa ON a.id = sa.artist_id WHERE sa.song_id = s.id) as artist_names,
+            al.title as album_title,
+            s.has_image as has_image,
             SUM(
                 CASE 
         "#
@@ -43,6 +46,7 @@ pub async fn find_songs_by_vector(
                 END
             ) as match_error
         FROM songs s
+        LEFT JOIN albums al ON s.album_id = al.id
         JOIN song_tags st ON s.id = st.song_id
         JOIN tags t ON st.tag_id = t.id
         WHERE t.name IN (
