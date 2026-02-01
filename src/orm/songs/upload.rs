@@ -27,6 +27,7 @@ pub async fn upload_song(
     let mut file_data: Option<Vec<u8>> = None;
     let mut title: Option<String> = None;
     let mut album_id: Option<i64> = None;
+    let mut artist_ids: Vec<i64> = Vec::new();
 
     // Parse multipart form data
     while let Some(field) = multipart.next_field().await
@@ -52,6 +53,18 @@ pub async fn upload_song(
                     album_id = text.parse::<i64>().ok();
                 }
             }
+            "artist_id" | "artist_ids" => {
+                let text = field.text().await
+                    .map_err(|e| AppError::BadRequest(format!("Failed to read artist_id: {}", e)))?;
+                if !text.is_empty() {
+                    // Support comma separated or multiple fields
+                    for part in text.split(',') {
+                        if let Ok(id) = part.trim().parse::<i64>() {
+                            artist_ids.push(id);
+                        }
+                    }
+                }
+            }
             _ => {}
         }
     }
@@ -64,6 +77,7 @@ pub async fn upload_song(
     let song = repository::create(&state.db, CreateSongDto {
         title: title.clone(),
         album_id,
+        artist_ids: if artist_ids.is_empty() { None } else { Some(artist_ids) },
     })
     .await
     .map_err(AppError::InternalServerError)?;

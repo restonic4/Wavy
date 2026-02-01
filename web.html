@@ -247,10 +247,67 @@
 
         .tab-content {
             display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .tab-content.active {
             display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            text-align: left;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9rem;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        input[type="file"] {
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.3s ease;
+        }
+
+        input[type="file"]:hover {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.05);
         }
 
         details summary {
@@ -338,67 +395,109 @@
         </div>
 
         <!-- Admin Panel (Admin Only) -->
+        <!-- Admin Panel (Admin Only) -->
         <div class="panel hidden" id="admin-panel">
-            <h2>⚙️ Admin Panel - Song Management</h2>
+            <h2>⚙️ Admin Panel - Radio Management</h2>
 
             <div class="tabs">
-                <button class="tab active" onclick="switchAdminTab('upload')">Upload</button>
-                <button class="tab" onclick="switchAdminTab('create')">Create</button>
-                <button class="tab" onclick="switchAdminTab('update')">Update</button>
-                <button class="tab" onclick="switchAdminTab('delete')">Delete</button>
+                <button class="tab active" data-tab="upload" onclick="switchAdminTab('upload')">Upload</button>
+                <button class="tab" data-tab="create" onclick="switchAdminTab('create')">Create Song</button>
+                <button class="tab" data-tab="library" onclick="switchAdminTab('library')">Song Library</button>
+                <button class="tab" data-tab="artists" onclick="switchAdminTab('artists')">Artists</button>
+                <button class="tab" data-tab="update" onclick="switchAdminTab('update')">Update</button>
+                <button class="tab" data-tab="delete" onclick="switchAdminTab('delete')">Delete</button>
             </div>
 
             <!-- Upload Song Tab -->
             <div id="admin-upload-tab" class="tab-content active">
                 <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
-                    POST /songs/upload - Upload audio file with automatic conversion
+                    POST /songs/upload - Upload audio file with metadata
                 </p>
                 <form id="upload-form">
                     <input type="text" id="upload-title" placeholder="Song Title" required>
+                    <input type="text" id="upload-artist-ids" placeholder="Artist IDs (e.g. 1, 2)">
                     <input type="number" id="upload-album-id" placeholder="Album ID (optional)">
-                    <input type="file" id="song-file" accept="audio/*" required>
-                    <button type="submit">Upload Song</button>
+                    <div style="margin: 10px 0;">
+                        <label style="display: block; font-size: 0.8rem; color: #888; margin-bottom: 5px;">Select audio
+                            file:</label>
+                        <input type="file" id="song-file" accept="audio/*" required>
+                    </div>
+                    <button type="submit">Upload & Convert</button>
                 </form>
-                <div id="upload-status"></div>
+                <div id="upload-status" style="margin-top: 10px;"></div>
             </div>
 
             <!-- Create Metadata Tab -->
             <div id="admin-create-tab" class="tab-content">
                 <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
-                    POST /songs - Create song metadata only (no file)
+                    POST /songs - Create song metadata only
                 </p>
                 <form id="create-song-form">
                     <input type="text" id="create-title" placeholder="Song Title" required>
+                    <input type="text" id="create-artist-ids" placeholder="Artist IDs (e.g. 1, 2)">
                     <input type="number" id="create-album-id" placeholder="Album ID (optional)">
                     <button type="submit">Create Song Metadata</button>
                 </form>
-                <div id="create-status"></div>
+                <div id="create-status" style="margin-top: 10px;"></div>
+            </div>
+
+            <!-- Song Library Tab -->
+            <div id="admin-library-tab" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <p style="color: #aaa; font-size: 0.9rem;">Current Database Library (GET /songs)</p>
+                    <button onclick="refreshSongLibrary()"
+                        style="width: auto; padding: 5px 15px; font-size: 0.8rem;">Refresh</button>
+                </div>
+                <div id="song-library-list" style="max-height: 400px; overflow-y: auto;">
+                    <p style="text-align: center; color: #666; padding: 20px;">Click Refresh to load songs...</p>
+                </div>
+            </div>
+
+            <!-- Artists Management Tab -->
+            <div id="admin-artists-tab" class="tab-content">
+                <h3>Add Artist</h3>
+                <form id="create-artist-form" style="margin-top: 10px; display: flex; gap: 8px;">
+                    <input type="text" id="artist-name-input" placeholder="Artist Name" required>
+                    <button type="submit" style="width: auto; white-space: nowrap;">Add Artist</button>
+                </form>
+                <div id="artist-status" style="margin-top: 10px;"></div>
+
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; margin-bottom: 10px;">
+                    <h3 style="margin: 0;">Artist List</h3>
+                    <button onclick="refreshArtistLibrary()"
+                        style="width: auto; padding: 5px 15px; font-size: 0.8rem;">Refresh</button>
+                </div>
+                <div id="artist-library-list" style="max-height: 300px; overflow-y: auto;">
+                    <p style="text-align: center; color: #666; padding: 20px;">Click Refresh to load artists...</p>
+                </div>
             </div>
 
             <!-- Update Song Tab -->
             <div id="admin-update-tab" class="tab-content">
                 <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
-                    POST /songs/{id} - Update existing song metadata
+                    POST /songs/{id} - Update existing song
                 </p>
                 <form id="update-song-form">
                     <input type="number" id="update-song-id" placeholder="Song ID" required>
                     <input type="text" id="update-title" placeholder="New Title (optional)">
+                    <input type="text" id="update-artist-ids" placeholder="New Artist IDs (optional, e.g. 1, 2)">
                     <input type="number" id="update-album-id" placeholder="New Album ID (optional)">
                     <button type="submit">Update Song</button>
                 </form>
-                <div id="update-status"></div>
+                <div id="update-status" style="margin-top: 10px;"></div>
             </div>
 
             <!-- Delete Song Tab -->
             <div id="admin-delete-tab" class="tab-content">
                 <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
-                    DELETE /songs/{id} - Permanently delete song
+                    DELETE /songs/{id} - Delete song and file
                 </p>
                 <form id="delete-song-form">
                     <input type="number" id="delete-song-id" placeholder="Song ID" required>
                     <button type="submit" class="danger">Delete Song</button>
                 </form>
-                <div id="delete-status"></div>
+                <div id="delete-status" style="margin-top: 10px;"></div>
             </div>
         </div>
 
@@ -501,15 +600,55 @@ Cookie optional (anonymous if no cookie)
             document.querySelectorAll('#admin-panel .tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('#admin-panel .tab-content').forEach(c => c.classList.remove('active'));
 
-            const tabs = {
-                'upload': 0,
-                'create': 1,
-                'update': 2,
-                'delete': 3
-            };
-
-            document.querySelectorAll('#admin-panel .tab')[tabs[tab]].classList.add('active');
+            document.querySelector(`#admin-panel .tab[data-tab="${tab}"]`).classList.add('active');
             document.getElementById(`admin-${tab}-tab`).classList.add('active');
+
+            if (tab === 'library') refreshSongLibrary();
+            if (tab === 'artists') refreshArtistLibrary();
+        }
+
+        // --- Library Refreshing ---
+        async function refreshSongLibrary() {
+            const list = document.getElementById('song-library-list');
+            list.innerHTML = '<p style="text-align: center; color: #aaa; padding: 20px;">Loading songs...</p>';
+            try {
+                const res = await fetch('/songs', { credentials: 'include' });
+                const songs = await res.json();
+                if (songs.length === 0) {
+                    list.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No songs in database</p>';
+                    return;
+                }
+                list.innerHTML = '<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">' +
+                    '<tr style="border-bottom: 2px solid #333; text-align: left;">' +
+                    '<th style="padding: 8px;">ID</th><th style="padding: 8px;">Title</th><th style="padding: 8px;">Artists</th><th style="padding: 8px;">AlbumID</th></tr>' +
+                    songs.map(s => `<tr style="border-bottom: 1px solid #222;">
+                        <td style="padding: 8px; font-family: monospace; color: #00d4ff;">${s.id}</td>
+                        <td style="padding: 8px;">${escapeHtml(s.title)}</td>
+                        <td style="padding: 8px; color: #aaa;">${escapeHtml(s.artist_names || 'None')}</td>
+                        <td style="padding: 8px; color: #666;">${s.album_id || '-'}</td>
+                    </tr>`).join('') + '</table>';
+            } catch (e) {
+                list.innerHTML = `<p style="color: coral; padding: 10px;">Error: ${e.message}</p>`;
+            }
+        }
+
+        async function refreshArtistLibrary() {
+            const list = document.getElementById('artist-library-list');
+            list.innerHTML = '<p style="text-align: center; color: #aaa; padding: 20px;">Loading artists...</p>';
+            try {
+                const res = await fetch('/artists', { credentials: 'include' });
+                const artists = await res.json();
+                if (artists.length === 0) {
+                    list.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No artists in database</p>';
+                    return;
+                }
+                list.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;">' +
+                    artists.map(a => `<div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px;">
+                        <span style="color: #00d4ff; font-family: monospace;">#${a.id}</span> ${escapeHtml(a.name)}
+                    </div>`).join('') + '</div>';
+            } catch (e) {
+                list.innerHTML = `<p style="color: coral; padding: 10px;">Error: ${e.message}</p>`;
+            }
         }
 
         // Register
@@ -650,11 +789,14 @@ Cookie optional (anonymous if no cookie)
         document.getElementById('upload-form').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            showStatus('upload-status', 'Uploading...', 'info');
+            showStatus('upload-status', 'Uploading & Converting...', 'info');
 
             const formData = new FormData();
             formData.append('file', document.getElementById('song-file').files[0]);
             formData.append('title', document.getElementById('upload-title').value);
+
+            const artistIds = document.getElementById('upload-artist-ids').value;
+            if (artistIds) formData.append('artist_ids', artistIds);
 
             const albumId = document.getElementById('upload-album-id').value;
             if (albumId) formData.append('album_id', albumId);
@@ -670,12 +812,38 @@ Cookie optional (anonymous if no cookie)
                     const data = await res.json();
                     showStatus('upload-status', `✓ ${data.message} (ID: ${data.song_id})`, 'success');
                     document.getElementById('upload-form').reset();
+                    refreshSongLibrary();
                 } else {
                     const error = await res.text();
                     showStatus('upload-status', `✗ ${error}`, 'error');
                 }
             } catch (e) {
                 showStatus('upload-status', `✗ ${e.message}`, 'error');
+            }
+        });
+
+        // Create Artist
+        document.getElementById('create-artist-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('artist-name-input').value;
+            try {
+                const res = await fetch('/artists', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name })
+                });
+                if (res.ok) {
+                    const artist = await res.json();
+                    showStatus('artist-status', `✓ Artist '${artist.name}' created (ID: ${artist.id})`, 'success');
+                    document.getElementById('create-artist-form').reset();
+                    refreshArtistLibrary();
+                } else {
+                    const error = await res.text();
+                    showStatus('artist-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('artist-status', `✗ ${e.message}`, 'error');
             }
         });
 
@@ -686,6 +854,11 @@ Cookie optional (anonymous if no cookie)
             const payload = {
                 title: document.getElementById('create-title').value
             };
+
+            const artistIdsStr = document.getElementById('create-artist-ids').value;
+            if (artistIdsStr) {
+                payload.artist_ids = artistIdsStr.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+            }
 
             const albumId = document.getElementById('create-album-id').value;
             if (albumId) payload.album_id = parseInt(albumId);
@@ -702,6 +875,7 @@ Cookie optional (anonymous if no cookie)
                     const song = await res.json();
                     showStatus('create-status', `✓ Song created (ID: ${song.id})`, 'success');
                     document.getElementById('create-song-form').reset();
+                    refreshSongLibrary();
                 } else {
                     const error = await res.text();
                     showStatus('create-status', `✗ ${error}`, 'error');
@@ -721,6 +895,11 @@ Cookie optional (anonymous if no cookie)
             const title = document.getElementById('update-title').value;
             if (title) payload.title = title;
 
+            const artistIdsStr = document.getElementById('update-artist-ids').value;
+            if (artistIdsStr) {
+                payload.artist_ids = artistIdsStr.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+            }
+
             const albumId = document.getElementById('update-album-id').value;
             if (albumId) payload.album_id = parseInt(albumId);
 
@@ -735,6 +914,7 @@ Cookie optional (anonymous if no cookie)
                 if (res.ok) {
                     const song = await res.json();
                     showStatus('update-status', `✓ Song updated: ${song.title}`, 'success');
+                    refreshSongLibrary();
                 } else {
                     const error = await res.text();
                     showStatus('update-status', `✗ ${error}`, 'error');
@@ -763,6 +943,7 @@ Cookie optional (anonymous if no cookie)
                 if (res.ok) {
                     showStatus('delete-status', `✓ Song #${songId} deleted`, 'success');
                     document.getElementById('delete-song-form').reset();
+                    refreshSongLibrary();
                 } else {
                     const error = await res.text();
                     showStatus('delete-status', `✗ ${error}`, 'error');
