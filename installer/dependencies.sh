@@ -8,7 +8,7 @@ fi
 
 # Ask user to continue, this will update the system and install deps
 printf "Do you want to update the system and install required dependencies? (y/n): "
-read answer
+read answer < /dev/tty
 
 case "$answer" in
   y|Y|yes|YES)
