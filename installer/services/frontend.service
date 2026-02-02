@@ -1,0 +1,17 @@
+[Unit]
+Description=Wavy Frontend
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/Wavy/frontend
+Environment=NODE_ENV=production
+Environment=PORT=3001
+Environment="PATH=/root/.nvm/versions/node/v24.13.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/root/.nvm/versions/node/v24.13.0/bin/npm start
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
