@@ -225,3 +225,5 @@ docker exec -it wavy-test bash
 docker compose down
 
 bash <(curl -sSL https://raw.githubusercontent.com/restonic4/Wavy/refs/heads/master/installer/installer.sh)
+
+bash <(curl -sSL https://raw.githubusercontent.com/restonic4/Wavy/refs/heads/master/installer/uninstall.sh)

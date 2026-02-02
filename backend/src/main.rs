@@ -97,7 +97,7 @@ async fn main() {
         .route("/heartbeat", post(handlers::heartbeat));
 
     let app = Router::new()
-        .route_service("/", ServeFile::new("web.html"))
+        .route_service("/", ServeFile::new("../backend/web.html"))
         .nest("/api", api_routes)
         .with_state(app_state);
 
