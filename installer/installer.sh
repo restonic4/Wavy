@@ -51,7 +51,7 @@ done
 # Clone or Update logic
 if [ -d "$INSTALL_DIR" ]; then
     echo "Existing installation found. Pulling latest changes..."
-    cd "$INSTALL_DIR"
+    cd "$INSTALL_DIR" || exit
     git fetch --all
     git reset --hard origin/main
 else
@@ -59,16 +59,16 @@ else
     git clone "$REPO_URL" "$INSTALL_DIR"
     sudo chown -R $USER:www-data "$INSTALL_DIR"
     sudo chmod -R 775 "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
+    cd "$INSTALL_DIR" || exit
 fi
 
 # Dependency Check/Install
-./dependencies.sh
+./installer/dependencies.sh
 
 # Execute for both services
 echo "Starting Service Synchronization"
-./service.sh "$BACKEND_SVC" "$BACKEND_SRC"
-./service.sh "$FRONTEND_SVC" "$FRONTEND_SRC"
+./installer/service.sh "$BACKEND_SVC" "$BACKEND_SRC"
+./installer/service.sh "$FRONTEND_SVC" "$FRONTEND_SRC"
 
 echo
 echo "All Done! Enjoy Wavy!"
