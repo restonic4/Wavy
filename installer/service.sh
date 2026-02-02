@@ -41,6 +41,12 @@ cp "$SOURCE_FILE" "$TARGET_PATH"
 sed -i "s|\${NODE_BIN}|$NODE_BIN_DIR|g" "$TARGET_PATH"
 chmod 644 "$TARGET_PATH"
 
+# CHECK IF SYSTEMCTL EXISTS
+if ! command -v systemctl &> /dev/null; then
+    echo "systemctl command not found. Skipping service starting (Running in Docker?)"
+    continue
+fi
+
 # Reload systemd to recognize the changes
 systemctl daemon-reload
 

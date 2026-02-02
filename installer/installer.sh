@@ -16,9 +16,15 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Stop services if found
-SERVICES=(BACKEND_SVC FRONTEND_SVC)
+SERVICES=("$BACKEND_SVC" "$FRONTEND_SVC")
 for SVC in "${SERVICES[@]}"; do
     echo "Checking $SVC"
+
+    # CHECK IF SYSTEMCTL EXISTS
+    if ! command -v systemctl &> /dev/null; then
+        echo "systemctl command not found. Skipping service check for $SVC (Running in Docker?)"
+        continue
+    fi
 
     # Check if the service exists
     if systemctl list-unit-files "$SVC" | grep -q "$SVC"; then

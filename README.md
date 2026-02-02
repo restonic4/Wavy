@@ -219,7 +219,8 @@ La cosa es que a lo mejor quiero escuchar una radio de estas de estacion o por h
 ffmpeg para normalizar decibelios de musica?
 realizar hearthbeats mas frecuentes? (no se, a lo mejor le suma un minuto al contador?)
 
-docker compose up -d --build
+docker compose build --no-cache
+docker compose up -d
 docker exec -it wavy-test bash
 docker compose down
 
