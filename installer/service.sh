@@ -16,7 +16,7 @@ SERVICE_NAME=$1
 SOURCE_FILE=$2
 TARGET_PATH="/etc/systemd/system/$SERVICE_NAME"
 
-# 1. Check if the source file exists
+# Check if the source file exists
 if [ ! -f "$SOURCE_FILE" ]; then
     echo "Error: Source file '$SOURCE_FILE' not found."
     exit 1
@@ -24,17 +24,17 @@ fi
 
 echo "Updating service: $SERVICE_NAME..."
 
-# 2. Copy/Replace the service file
+# Copy/Replace the service file
 cp "$SOURCE_FILE" "$TARGET_PATH"
 chmod 644 "$TARGET_PATH"
 
-# 3. Reload systemd to recognize the changes
+# Reload systemd to recognize the changes
 systemctl daemon-reload
 
-# 4. Enable the service (so it starts on boot)
+# Enable the service
 systemctl enable "$SERVICE_NAME"
 
-# 5. Restart the service to apply the new configuration
+# Restart the service to apply the new configuration
 systemctl restart "$SERVICE_NAME"
 
 echo "Success! $SERVICE_NAME has been updated and restarted."
