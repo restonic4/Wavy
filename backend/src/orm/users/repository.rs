@@ -15,15 +15,23 @@ pub async fn create(pool: &SqlitePool, dto: CreateUserDto) -> Result<User, Strin
         .map_err(|e| e.to_string())?
         .to_string();
 
+    let user_count: i64 = sqlx::query_scalar!("SELECT COUNT(*) FROM users")
+        .fetch_one(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let role = if user_count == 0 { "admin" } else { "user" };
+
     let user = sqlx::query_as!(
         User,
         r#"
         INSERT INTO users (username, password_hash, role)
-        VALUES (?, ?, 'user')
+        VALUES (?, ?, ?)
         RETURNING id as "id!", username, password_hash, artist_id, role, total_listen_time
         "#,
         dto.username,
-        password_hash
+        password_hash,
+        role
     )
     .fetch_one(pool)
     .await
