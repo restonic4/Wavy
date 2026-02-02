@@ -5,11 +5,11 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root/Wavy/frontend
+WorkingDirectory=/var/www/Wavy/frontend
 Environment=NODE_ENV=production
 Environment=PORT=3001
 Environment="PATH=${NODE_BIN}:/usr/local/bin:/usr/bin:/bin"
-ExecStart=/root/.nvm/versions/node/v24.13.0/bin/npm start
+ExecStart=${NODE_BIN}/npm start
 Restart=always
 RestartSec=3
 

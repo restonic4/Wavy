@@ -12,6 +12,10 @@ if [ "$#" -ne 2 ]; then
     exit 1
 fi
 
+# Force NVM to load
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
 SERVICE_NAME=$1
 SOURCE_FILE=$2
 TARGET_PATH="/etc/systemd/system/$SERVICE_NAME"
@@ -32,7 +36,9 @@ fi
 
 # Get the directory of the executable (e.g., /root/.nvm/.../bin)
 NODE_BIN_DIR=$(dirname "$NODE_EXEC")
-echo "Detected Node.js bin directory: $NODE_BIN_DIR"
+NPM_EXEC="$NODE_BIN_DIR/npm"
+
+echo "Detected Node Path: $NODE_BIN_DIR"
 
 echo "Updating service: $SERVICE_NAME..."
 

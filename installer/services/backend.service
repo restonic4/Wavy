@@ -5,8 +5,8 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root/Wavy/backend
-ExecStart=/root/apps/Wavy/backend/target/release/Wavy
+WorkingDirectory=/var/www/Wavy/backend
+ExecStart=/var/www/Wavy/backend/target/release/Wavy
 Restart=always
 RestartSec=3
 
