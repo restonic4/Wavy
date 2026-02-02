@@ -65,6 +65,32 @@ fi
 # Dependency Check/Install
 ./installer/dependencies.sh
 
+# Backend build
+echo "Building Rust Backend..."
+cd "$INSTALL_DIR/backend" || exit
+
+# Database Setup
+if [ ! -f "radio.db" ]; then
+    echo "Database not found. Creating radio.db..."
+    sqlx database create --database-url "sqlite:radio.db"
+fi
+echo "Running migrations..."
+sqlx migrate run --database-url "sqlite:radio.db"
+
+# Build the release binary
+cargo build --release
+
+# Frontend build
+echo "Building Frontend..."
+cd "$INSTALL_DIR/frontend" || exit
+
+# Assuming you use npm, change to pnpm/yarn if needed
+npm install
+npm run build
+
+# Exit
+cd "$INSTALL_DIR" || exit
+
 # Execute for both services
 echo "Starting Service Synchronization"
 ./installer/service.sh "$BACKEND_SVC" "$BACKEND_SRC"
