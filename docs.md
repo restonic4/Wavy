@@ -15,3 +15,5 @@ docker compose build --no-cache docker compose up -d docker exec -it wavy-test b
 bash <(curl -sSL https://raw.githubusercontent.com/restonic4/Wavy/refs/heads/master/installer/installer.sh)
 
 bash <(curl -sSL https://raw.githubusercontent.com/restonic4/Wavy/refs/heads/master/installer/uninstall.sh)
+
+TODO: dirs, data y raw
