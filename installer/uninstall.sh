@@ -21,8 +21,9 @@ echo "  1. Stop and disable Wavy Backend and Frontend services."
 echo "  2. Remove service configuration files from /etc/systemd/system/."
 echo "  3. PERMANENTLY DELETE directory: $INSTALL_DIR"
 echo "     (This will delete all data, logs, and databases stored inside that folder)."
+echo "  4. (Optional) Remove Nginx website config and SSL certificates."
 echo
-echo "Note: Global dependencies (Node.js, Rust, SQLite, Git) will NOT be removed."
+echo "Note: Global dependencies (Node.js, Rust, SQLite, Git, Certbot) will NOT be removed."
 echo "======================================================="
 
 # Ask for confirmation
@@ -92,6 +93,68 @@ if [ -d "$INSTALL_DIR" ]; then
 else
     echo "Directory $INSTALL_DIR not found."
 fi
+
+# Nginx & Certbot Cleanup
+echo "-------------------------------------------------------"
+echo "               NGINX & SSL CLEANUP"
+echo "-------------------------------------------------------"
+printf "Do you want to remove the Nginx site configuration and SSL certificate? (y/n): "
+read nginx_answer < /dev/tty
+
+case "$nginx_answer" in
+  y|Y|yes|YES)
+    # We need the domain to find the specific files
+    echo
+    echo "Please enter the domain name you used for Wavy (e.g. wavy.example.com):"
+    printf "> "
+    read DOMAIN < /dev/tty
+
+    if [ -z "$DOMAIN" ]; then
+        echo "No domain entered. Skipping Nginx cleanup."
+    else
+        # Remove SSL Certificate (This stops the renewal cronjob for this specific site)
+        if command -v certbot &> /dev/null; then
+            echo "Removing SSL Certificate for $DOMAIN..."
+            # --cert-name is generally the domain name. 
+            # We use delete to remove it from Certbot's management/renewal list.
+            certbot delete --cert-name "$DOMAIN" --non-interactive
+        else
+            echo "Certbot not found. Skipping SSL removal."
+        fi
+
+        # Remove Nginx Config Files
+        SITE_AVAIL="/etc/nginx/sites-available/$DOMAIN"
+        SITE_ENABLED="/etc/nginx/sites-enabled/$DOMAIN"
+        FOUND_CONF=false
+
+        if [ -f "$SITE_ENABLED" ]; then
+            echo "Removing enabled site symlink: $SITE_ENABLED"
+            rm -f "$SITE_ENABLED"
+            FOUND_CONF=true
+        fi
+
+        if [ -f "$SITE_AVAIL" ]; then
+            echo "Removing configuration file: $SITE_AVAIL"
+            rm -f "$SITE_AVAIL"
+            FOUND_CONF=true
+        fi
+
+        if [ "$FOUND_CONF" = true ]; then
+             # Reload Nginx to apply changes
+             if command -v systemctl &> /dev/null && systemctl is-active --quiet nginx; then
+                echo "Reloading Nginx to apply changes..."
+                systemctl reload nginx
+             fi
+             echo "Nginx configuration removed."
+        else
+             echo "No Nginx configuration files found for '$DOMAIN'."
+        fi
+    fi
+    ;;
+  *)
+    echo "Skipping Nginx cleanup."
+    ;;
+esac
 
 echo "-------------------------------------------------------"
 echo "Uninstallation Complete."

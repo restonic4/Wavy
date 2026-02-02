@@ -97,4 +97,27 @@ echo "Starting Service Synchronization"
 ./installer/service.sh "$FRONTEND_SVC" "$FRONTEND_SRC"
 
 echo
+echo
+echo
+echo "------------------------------------------------------"
+echo "Current status: Services are running locally."
+echo "Note: The application is NOT yet accessible to the public."
+echo "You will need an Nginx reverse proxy to expose Wavy to the web."
+echo "------------------------------------------------------"
+echo
+echo
+echo
+
+# Ask user if they want to configure Nginx
+echo -n "Would you like to run the Nginx setup script now? (y/n): "
+read -r answer < /dev/tty
+
+if [[ "$answer" =~ ^[Yy]$ ]]; then
+    echo "Starting Nginx configuration..."
+    ./installer/nginx.sh
+fi
+
+echo
+echo
+echo
 echo "All Done! Enjoy Wavy!"
