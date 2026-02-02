@@ -62,3 +62,12 @@ if ! command -v sqlx >/dev/null 2>&1; then
 else
     echo "sqlx-cli found: $(sqlx --version)"
 fi
+
+## Node.js (Using Nodesource for the latest LTS)
+if ! command -v node >/dev/null 2>&1; then
+    echo "Node.js not found. Installing Node.js 20.x (LTS)..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+else
+    echo "Node.js found: $(node -v)"
+fi

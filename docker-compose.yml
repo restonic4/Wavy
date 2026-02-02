@@ -1,7 +1,6 @@
 services:
   ubuntu-tester:
-    image: ubuntu:24.04
+    build: .
     container_name: wavy-test
     stdin_open: true
     tty: true
-    command: /bin/bash

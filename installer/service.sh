@@ -22,10 +22,23 @@ if [ ! -f "$SOURCE_FILE" ]; then
     exit 1
 fi
 
+# Find the node executable in the current environment
+NODE_EXEC=$(command -v node)
+
+if [ -z "$NODE_EXEC" ]; then
+    echo "Error: 'node' command not found. Please ensure node is in the PATH."
+    exit 1
+fi
+
+# Get the directory of the executable (e.g., /root/.nvm/.../bin)
+NODE_BIN_DIR=$(dirname "$NODE_EXEC")
+echo "Detected Node.js bin directory: $NODE_BIN_DIR"
+
 echo "Updating service: $SERVICE_NAME..."
 
 # Copy/Replace the service file
 cp "$SOURCE_FILE" "$TARGET_PATH"
+sed -i "s|\${NODE_BIN}|$NODE_BIN_DIR|g" "$TARGET_PATH"
 chmod 644 "$TARGET_PATH"
 
 # Reload systemd to recognize the changes
