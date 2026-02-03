@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 export const HeroPlayer = () => {
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const { isPlaying, setIsPlaying } = usePlayback();
+    const { isPlaying, setIsPlaying, reportProgress } = usePlayback();
     const [volume, setVolume] = useState(0.8);
     const [isMuted, setIsMuted] = useState(false);
     const [status, setStatus] = useState<ServerStatus | null>(null);
@@ -46,6 +46,19 @@ export const HeroPlayer = () => {
         const interval = setInterval(fetchStatus, 5000);
         return () => clearInterval(interval);
     }, [fetchStatus]);
+
+    // Heartbeat Reporting
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (isPlaying) {
+            interval = setInterval(() => {
+                if (audioRef.current) {
+                    reportProgress(audioRef.current.currentTime * 1000);
+                }
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [isPlaying, reportProgress]);
 
     // Enrich song data whenever currentSongId changes
     useEffect(() => {
@@ -116,6 +129,10 @@ export const HeroPlayer = () => {
 
     const handleManualStart = () => {
         if (audioRef.current) {
+            // Reconnect to ensure we are at the live edge (not playing buffered stale audio)
+            audioRef.current.src = api.streamUrl;
+            audioRef.current.load();
+
             audioRef.current.play().then(() => {
                 setAutoplayBlocked(false);
                 setIsPlaying(true);
@@ -127,7 +144,7 @@ export const HeroPlayer = () => {
 
     return (
         <div className="relative w-full max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-center gap-12 md:gap-24 p-8">
-            <audio ref={audioRef} crossOrigin="anonymous" loop={false} />
+            <audio ref={audioRef} loop={false} />
 
             {/* Left: The Orb */}
             <div className="relative group shrink-0">

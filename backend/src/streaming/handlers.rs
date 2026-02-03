@@ -51,6 +51,7 @@ pub async fn stream_audio(
                 last_heartbeat: Utc::now(),
                 start_frame_index: current_frame_index,
                 burst_buffer_ms,
+                last_saved_at: Utc::now(),
             },
         );
     }

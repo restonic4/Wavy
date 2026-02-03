@@ -2,15 +2,10 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { api } from '@/lib/api';
-
-interface Listener {
-    username: string;
-    connected_at: string;
-    is_authenticated: boolean;
-}
+import { ActiveListener } from '@/lib/types';
 
 export const ScrollableListeners = () => {
-    const [listeners, setListeners] = useState<Listener[]>([]);
+    const [listeners, setListeners] = useState<ActiveListener[]>([]);
     const [loading, setLoading] = useState(true);
     const containerRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
@@ -18,9 +13,9 @@ export const ScrollableListeners = () => {
 
     const fetchListeners = async () => {
         try {
-            const data = await api.status.get();
-            if (data && Array.isArray(data.listeners)) {
-                setListeners(data.listeners);
+            const data = await api.listeners.list();
+            if (Array.isArray(data)) {
+                setListeners(data);
             }
             setLoading(false);
         } catch (err) {
@@ -64,11 +59,16 @@ export const ScrollableListeners = () => {
     }
 
     // Prepare the content for display
-    const ListenerItem = ({ listener }: { listener: Listener }) => (
-        <span className="mx-2 text-sky-900/70 font-medium text-sm whitespace-nowrap">
-            {listener.username}
-        </span>
-    );
+    // Prepare the content for display
+    const ListenerItem = ({ listener }: { listener: ActiveListener }) => {
+        const mins = Math.floor(listener.listen_time_ms / 60000);
+        return (
+            <span className="mx-3 text-sky-900/70 font-medium text-sm whitespace-nowrap flex items-center gap-1">
+                <span className="font-bold">{listener.username}</span>
+                <span className="text-xs opacity-60">({mins}m)</span>
+            </span>
+        );
+    };
 
     const animationDuration = Math.max(listeners.length * 3, 10); // At least 10s
 

@@ -1,5 +1,5 @@
 use crate::config::BURST_BUFFER_SECONDS;
-use crate::state::AudioFrame;
+use crate::state::{AudioFrame, StationData};
 use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::Duration;
@@ -9,6 +9,7 @@ pub async fn start(
     tx: broadcast::Sender<AudioFrame>,
     mut rx: mpsc::Receiver<AudioFrame>,
     history: Arc<RwLock<VecDeque<AudioFrame>>>,
+    station: Arc<RwLock<StationData>>,
 ) {
     let mut next_send_time = tokio::time::Instant::now();
 
@@ -20,6 +21,13 @@ pub async fn start(
 
         // Send to live listeners
         let _ = tx.send(frame.clone());
+
+        // Update server playback position
+        {
+            let mut station_guard = station.write().await;
+            station_guard.playback_position.current_frame_index += 1;
+            station_guard.playback_position.total_duration_ms += frame.duration.as_millis() as u64;
+        }
 
         // Add to history buffer for new joiners
         {

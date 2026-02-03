@@ -32,3 +32,9 @@ export interface User {
     total_listen_time: number;
     artist_id?: number | null;
 }
+
+export interface ActiveListener {
+    username: string;
+    connected_at: string;
+    listen_time_ms: number;
+}

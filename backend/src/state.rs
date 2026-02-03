@@ -9,35 +9,57 @@ use sqlx::SqlitePool;
 use tokio::sync::{broadcast, RwLock};
 use axum_extra::extract::cookie::Key;
 
-#[derive(Clone, Serialize, Debug)]
-pub struct SongMetadata {
-    pub id: u64,
-    pub title: String,
-    pub artist: Option<String>,
-    pub duration_seconds: f64,
-    pub started_at: DateTime<Utc>,
-    pub sample_rate: u32,
-}
-
+/// Information about a connected listener
 #[derive(Clone, Serialize, Debug)]
 pub struct Listener {
+    pub user_id: i64,
     pub username: String,
-    pub current_song_id: u64,
-    pub drift_seconds: f64,
-    pub last_seen: DateTime<Utc>,
-    pub is_authenticated: bool,  // true if real user, false if anonymous
     pub connected_at: DateTime<Utc>,
-    pub last_db_update: DateTime<Utc>,
-    #[serde(skip)]
-    pub seconds_since_last_update: i64,
-    #[serde(skip)]
-    pub base_total_listen_time: i64,
+    pub last_heartbeat: DateTime<Utc>,
+    /// The frame index when this listener connected
+    pub start_frame_index: u64,
+    /// Duration of burst buffer sent to this listener (in milliseconds)
+    pub burst_buffer_ms: u64,
+    /// Last time the listener's progress was saved to the database
+    pub last_saved_at: DateTime<Utc>,
+}
+
+impl Listener {
+    /// Check if listener hasn't sent a heartbeat in the specified duration
+    pub fn is_stale(&self, timeout_seconds: i64) -> bool {
+        let now = Utc::now();
+        let elapsed = now.signed_duration_since(self.last_heartbeat);
+        elapsed.num_seconds() > timeout_seconds
+    }
+}
+
+/// Tracks the server's current playback position
+#[derive(Clone, Debug)]
+pub struct ServerPlaybackPosition {
+    /// Current frame index being broadcast
+    pub current_frame_index: u64,
+    /// Timestamp when the server started broadcasting
+    pub server_start_time: DateTime<Utc>,
+    /// Total duration of audio played so far (in milliseconds)
+    pub total_duration_ms: u64,
+}
+
+impl Default for ServerPlaybackPosition {
+    fn default() -> Self {
+        Self {
+            current_frame_index: 0,
+            server_start_time: Utc::now(),
+            total_duration_ms: 0,
+        }
+    }
 }
 
 #[derive(Default)]
 pub struct StationData {
-    pub history: VecDeque<SongMetadata>,
-    pub listeners: HashMap<String, Listener>,
+    /// Active stream listeners tracked by their User ID
+    pub listeners: HashMap<i64, Listener>,
+    /// Server's current playback position
+    pub playback_position: ServerPlaybackPosition,
 }
 
 /// An MP3 frame with its precise timing information

@@ -1,76 +1,36 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { api } from '@/lib/api';
-import { PlaybackStats } from '@/lib/types';
+
+interface SyncStatus {
+    desync_ms: number;
+}
 
 interface PlaybackContextType {
     isPlaying: boolean;
     setIsPlaying: (playing: boolean) => void;
-    stats: PlaybackStats | null;
-    connectTime: string | null;
+    syncStatus: SyncStatus | null;
+    reportProgress: (positionMs: number) => Promise<void>;
 }
 
 const PlaybackContext = createContext<PlaybackContextType | undefined>(undefined);
 
 export const PlaybackProvider = ({ children }: { children: React.ReactNode }) => {
     const [isPlaying, setIsPlaying] = useState(false);
-    const [stats, setStats] = useState<PlaybackStats | null>(null);
-    const [connectTime, setConnectTime] = useState<string | null>(null);
-    const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
-    const startTimeRef = useRef<number | null>(null);
+    const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
 
-    const sendHeartbeat = async (explicitConnectTime?: string) => {
-        const timeToUse = explicitConnectTime || connectTime;
-        if (!timeToUse) return;
-
-        const playedSeconds = startTimeRef.current
-            ? (Date.now() - startTimeRef.current) / 1000
-            : 0;
-
+    const reportProgress = async (positionMs: number) => {
         try {
-            const data = await api.status.heartbeat({
-                connect_time: timeToUse,
-                played_seconds: playedSeconds
-            });
-            setStats(data);
+            const data = await api.status.heartbeat(Math.floor(positionMs));
+            setSyncStatus(data);
         } catch (err) {
             console.error("Heartbeat failed:", err);
         }
     };
 
-    useEffect(() => {
-        if (isPlaying) {
-            const now = new Date().toISOString();
-            setConnectTime(now);
-            startTimeRef.current = Date.now();
-
-            // Send heartbeat every 20 seconds
-            heartbeatIntervalRef.current = setInterval(() => sendHeartbeat(now), 20000);
-
-            // Send one immediately
-            sendHeartbeat(now);
-        } else {
-            if (heartbeatIntervalRef.current) {
-                clearInterval(heartbeatIntervalRef.current);
-                heartbeatIntervalRef.current = null;
-            }
-            // Reset connect time when stopped? 
-            // The backend uses session tracking, so if we stop and start, it's a new "listen segment"
-            // but the backend handles it via connect_time.
-            setConnectTime(null);
-            startTimeRef.current = null;
-        }
-
-        return () => {
-            if (heartbeatIntervalRef.current) {
-                clearInterval(heartbeatIntervalRef.current);
-            }
-        };
-    }, [isPlaying]);
-
     return (
-        <PlaybackContext.Provider value={{ isPlaying, setIsPlaying, stats, connectTime }}>
+        <PlaybackContext.Provider value={{ isPlaying, setIsPlaying, syncStatus, reportProgress }}>
             {children}
         </PlaybackContext.Provider>
     );

@@ -1,7 +1,7 @@
 
-import { Song, PlaybackStats, ServerStatus, VibeTag, User } from './types';
+import { Song, PlaybackStats, ServerStatus, VibeTag, User, ActiveListener } from './types';
 
-export const API_BASE_URL = '/api';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 /**
  * Fetch wrapper for the Wavy Radio API.
@@ -98,8 +98,13 @@ export const api = {
     // Status
     status: {
         get: () => wavyFetch<ServerStatus>('/status'),
-        heartbeat: (body: { connect_time: string, played_seconds: number }) =>
-            wavyFetch<PlaybackStats>('/heartbeat', { method: 'POST', body: JSON.stringify(body) }),
+        heartbeat: (client_position_ms: number) =>
+            wavyFetch<{ desync_ms: number }>('/heartbeat', { method: 'POST', body: JSON.stringify({ client_position_ms }) }),
+    },
+
+    // Listeners
+    listeners: {
+        list: () => wavyFetch<ActiveListener[]>('/listeners'),
     },
 
     // Audio Stream URL

@@ -8,12 +8,14 @@ import { GlassModal } from './ui/GlassModal';
 import { Search } from './Search';
 import { Leaderboard } from './Leaderboard';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePlayback } from '@/contexts/PlaybackContext';
 import Link from 'next/link';
 
 export const MenuSidebar = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [activeModal, setActiveModal] = useState<'search' | 'leaderboard' | 'profile' | null>(null);
     const { user, logout } = useAuth();
+    const { syncStatus } = usePlayback();
 
     const menuItems = [
         {
@@ -112,6 +114,24 @@ export const MenuSidebar = () => {
                             </div>
 
                             <div className="mt-auto">
+                                {syncStatus && (
+                                    <div className="mb-4 flex justify-center">
+                                        <div className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border ${Math.abs(syncStatus.desync_ms) < 100
+                                                ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
+                                                : Math.abs(syncStatus.desync_ms) < 500
+                                                    ? 'bg-amber-500/10 text-amber-700 border-amber-500/20'
+                                                    : 'bg-red-500/10 text-red-700 border-red-500/20'
+                                            }`}>
+                                            <div className={`w-2 h-2 rounded-full ${Math.abs(syncStatus.desync_ms) < 100
+                                                    ? 'bg-emerald-500 animate-pulse'
+                                                    : Math.abs(syncStatus.desync_ms) < 500
+                                                        ? 'bg-amber-500'
+                                                        : 'bg-red-500'
+                                                }`} />
+                                            Sync Delay: {syncStatus.desync_ms}ms
+                                        </div>
+                                    </div>
+                                )}
                                 <p className="text-center text-xs font-medium text-sky-900/40">
                                     Wavy Web &copy; 2026
                                 </p>

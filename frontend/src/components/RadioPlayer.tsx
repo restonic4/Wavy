@@ -10,7 +10,7 @@ import { usePlayback } from '@/contexts/PlaybackContext';
 
 export const RadioPlayer = () => {
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const { isPlaying, setIsPlaying } = usePlayback();
+    const { isPlaying, setIsPlaying, reportProgress } = usePlayback();
     const [volume, setVolume] = useState(0.8);
     const [isMuted, setIsMuted] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -27,6 +27,18 @@ export const RadioPlayer = () => {
         audio.addEventListener('error', handleError);
         return () => audio.removeEventListener('error', handleError);
     }, [setIsPlaying]);
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (isPlaying) {
+            interval = setInterval(() => {
+                if (audioRef.current) {
+                    reportProgress(audioRef.current.currentTime * 1000);
+                }
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [isPlaying, reportProgress]);
 
     useEffect(() => {
         if (audioRef.current) {
@@ -56,7 +68,7 @@ export const RadioPlayer = () => {
 
     return (
         <div className="flex flex-col items-center gap-4">
-            <audio ref={audioRef} crossOrigin="anonymous" />
+            <audio ref={audioRef} />
 
             {/* The Central Orb (Visual Representation) */}
             <div className="relative group">

@@ -1,8 +1,6 @@
-use crate::config::{DATA_FOLDER, DEFAULT_SAMPLE_RATE, SAMPLES_PER_FRAME};
-use crate::state::{AppState, AudioFrame, SongMetadata};
+use crate::config::{DATA_FOLDER, DEFAULT_SAMPLE_RATE};
+use crate::state::{AppState, AudioFrame};
 use bytes::Bytes;
-use chrono::Utc;
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
@@ -37,7 +35,7 @@ pub fn start(tx: mpsc::Sender<AudioFrame>, state: Arc<AppState>) {
             let mut play_list = songs;
             tokio::task::block_in_place(|| {
                 use rand::seq::SliceRandom;
-                play_list.shuffle(&mut rand::thread_rng());
+                play_list.shuffle(&mut rand::rng());
             });
 
             for song_data in play_list {
@@ -48,7 +46,7 @@ pub fn start(tx: mpsc::Sender<AudioFrame>, state: Arc<AppState>) {
                     continue;
                 }
 
-                tracing::info!("🎵 Loading song #{}: {} by {:?}", song_data.id, song_data.title, song_data.artist_names);
+                tracing::info!("Loading song #{}: {} by {:?}", song_data.id, song_data.title, song_data.artist_names);
 
                 let tx_clone = tx.clone();
                 let state_clone = state.clone();
@@ -60,8 +58,8 @@ pub fn start(tx: mpsc::Sender<AudioFrame>, state: Arc<AppState>) {
 
                 match result {
                     Ok(Ok(_)) => {}
-                    Ok(Err(e)) => tracing::error!("✗ Error streaming: {}", e),
-                    Err(e) => tracing::error!("✗ Task error: {}", e),
+                    Ok(Err(e)) => tracing::error!("Error streaming: {}", e),
+                    Err(e) => tracing::error!("Task error: {}", e),
                 }
             }
         }
@@ -72,7 +70,7 @@ fn stream_mp3_file(
     path: &Path,
     tx: &mpsc::Sender<AudioFrame>,
     db_song: Song,
-    state: &Arc<AppState>,
+    _state: &Arc<AppState>,
 ) -> Result<(), String> {
     let file = std::fs::File::open(path).map_err(|e| format!("File open error: {}", e))?;
     let mss = MediaSourceStream::new(Box::new(file), Default::default());
@@ -83,7 +81,7 @@ fn stream_mp3_file(
     let meta_opts: MetadataOptions = Default::default();
     let fmt_opts: FormatOptions = Default::default();
 
-    let mut probed = symphonia::default::get_probe()
+    let probed = symphonia::default::get_probe()
         .format(&hint, mss, &fmt_opts, &meta_opts)
         .map_err(|e| format!("Failed to probe file: {}", e))?;
 
@@ -99,35 +97,14 @@ fn stream_mp3_file(
     let sample_rate = codec_params.sample_rate.unwrap_or(0);
 
     if sample_rate != DEFAULT_SAMPLE_RATE {
-        tracing::warn!("⏭️ Skipping {}: Sample Rate mismatch ({}Hz)", db_song.title, sample_rate);
+        tracing::warn!("Skipping {}: Sample Rate mismatch ({}Hz)", db_song.title, sample_rate);
         return Ok(());
     }
 
-    let duration_secs = codec_params
+    /*let duration_secs = codec_params
         .n_frames
         .map(|frames| (frames as f64 * SAMPLES_PER_FRAME as f64) / sample_rate as f64)
-        .unwrap_or(180.0);
-
-    // Update station metadata using DB info, not file tags
-    let metadata = SongMetadata {
-        id: db_song.id as u64,
-        title: db_song.title,
-        artist: db_song.artist_names,
-        duration_seconds: duration_secs,
-        started_at: Utc::now(),
-        sample_rate,
-    };
-
-    let state_clone = state.clone();
-    tokio::task::block_in_place(|| {
-        tokio::runtime::Handle::current().block_on(async {
-            let mut station = state_clone.station.write().await;
-            station.history.push_back(metadata);
-            if station.history.len() > 10 {
-                station.history.pop_front();
-            }
-        })
-    });
+        .unwrap_or(180.0);*/
 
     let dec_opts: DecoderOptions = Default::default();
     let mut decoder = symphonia::default::get_codecs()
