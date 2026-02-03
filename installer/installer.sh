@@ -65,6 +65,33 @@ fi
 # Dependency Check/Install
 ./installer/dependencies.sh
 
+# Basic .env backend setup
+echo "Setting up environment variables..."
+cd "$INSTALL_DIR/backend" || exit
+ENV_FILE=".env"
+
+if [ ! -f "$ENV_FILE" ]; then
+    echo "Creating new .env file..."
+    touch "$ENV_FILE"
+fi
+
+# Add DATABASE_URL if it doesn't exist
+if ! grep -q "DATABASE_URL=" "$ENV_FILE"; then
+    echo "Adding DATABASE_URL to .env..."
+    echo "DATABASE_URL=sqlite:radio.db" >> "$ENV_FILE"
+fi
+
+# Add COOKIE_KEY if it doesn't exist
+if ! grep -q "COOKIE_KEY=" "$ENV_FILE"; then
+    echo "Generating secure COOKIE_KEY..."
+    # Generate 64 bytes, base64 encode, and strip any potential newlines
+    RANDOM_KEY=$(openssl rand -base64 64 | tr -d '\n\r')
+    echo "COOKIE_KEY=$RANDOM_KEY" >> "$ENV_FILE"
+    echo "Key generated and saved."
+else
+    echo "Existing COOKIE_KEY found in .env, skipping generation."
+fi
+
 # Backend build
 echo "Building Rust Backend..."
 cd "$INSTALL_DIR/backend" || exit

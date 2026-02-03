@@ -1,1 +1,1 @@
-- [ ] Generating a new cookie key on installation if not found.
+- [x] Generating a new cookie key on installation if not found.
