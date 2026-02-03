@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wavy Radio - Complete API Demo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #eee;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #aaa;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .panel h2 {
+            margin-bottom: 15px;
+            color: #00d4ff;
+            font-size: 1.3rem;
+        }
+
+        .song-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 3px solid #555;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .song-card.active {
+            border-left-color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .listener-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .badge.auth {
+            background: rgba(0, 212, 255, 0.3);
+            color: #00d4ff;
+        }
+
+        .badge.anon {
+            background: rgba(136, 136, 136, 0.2);
+            color: #888;
+        }
+
+        .drift {
+            font-family: 'Courier New', monospace;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .drift.good {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .drift.ok {
+            background: rgba(255, 200, 0, 0.2);
+            color: #ffc800;
+        }
+
+        .drift.bad {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+        }
+
+        input,
+        button {
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        button {
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        button.danger {
+            background: linear-gradient(90deg, #ff4444, #ff6666);
+            color: #fff;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .status-msg {
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        .status-msg.success {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .status-msg.error {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+        }
+
+        .status-msg.info {
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border: none;
+            border-radius: 6px;
+            color: #aaa;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .tab.active {
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            color: #000;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            text-align: left;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9rem;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        input[type="file"] {
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.3s ease;
+        }
+
+        input[type="file"]:hover {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        details summary {
+            cursor: pointer;
+            color: #00d4ff;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        details[open] summary {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎵 Wavy Radio</h1>
+        <p class="subtitle">Complete API Demo • All Endpoints • Cookie-Based Auth • Real-time Streaming</p>
+
+        <!-- Auth Panel -->
+        <div class="panel" id="auth-panel">
+            <h2>🔐 Authentication & User Management</h2>
+            <div id="auth-status"></div>
+
+            <div id="auth-forms">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('login')">Login</button>
+                    <button class="tab" onclick="switchTab('register')">Register</button>
+                </div>
+
+                <div id="login-tab" class="tab-content active">
+                    <p style="color: #aaa; margin-bottom: 10px; font-size: 0.9rem;">POST /api/auth/login</p>
+                    <form id="login-form">
+                        <input type="text" id="login-username" placeholder="Username" required>
+                        <input type="password" id="login-password" placeholder="Password" required>
+                        <button type="submit">Login</button>
+                    </form>
+                </div>
+
+                <div id="register-tab" class="tab-content">
+                    <p style="color: #aaa; margin-bottom: 10px; font-size: 0.9rem;">POST /api/auth/register</p>
+                    <form id="register-form">
+                        <input type="text" id="register-username" placeholder="Username" required>
+                        <input type="password" id="register-password" placeholder="Password" required>
+                        <button type="submit">Register</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="auth-logged-in" class="hidden">
+                <p style="margin-bottom: 15px;">
+                    Logged in as: <strong id="current-username"></strong>
+                    (<span id="current-role" style="color: #00d4ff;"></span>)
+                </p>
+
+                <!-- Username Editor -->
+                <details style="margin-bottom: 15px;">
+                    <summary>✏️ Edit Username (POST /api/users/{id})</summary>
+                    <form id="edit-username-form" style="margin-top: 10px;">
+                        <input type="text" id="new-username" placeholder="New Username" required>
+                        <button type="submit">Update Username</button>
+                    </form>
+                    <div id="edit-username-status"></div>
+                </details>
+
+                <button class="secondary" onclick="logout()">Logout (POST /api/auth/logout)</button>
+            </div>
+        </div>
+
+        <!-- Audio Player -->
+        <div class="panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 style="margin: 0;">🎧 Live Stream</h2>
+                <span class="status-badge" id="status-badge">
+                    <span class="status-dot"></span>
+                    <span id="status-text">Disconnected</span>
+                </span>
+            </div>
+            <audio id="audio" controls></audio>
+            <button onclick="startListening()" style="margin-top: 10px;">Start Listening (GET /api/stream)</button>
+            <p style="color: #666; font-size: 0.85rem; margin-top: 10px;">
+                Heartbeat: POST /api/heartbeat (every 1s) • Status: GET /api/status
+            </p>
+        </div>
+
+        <!-- Admin Panel (Admin Only) -->
+        <!-- Admin Panel (Admin Only) -->
+        <div class="panel hidden" id="admin-panel">
+            <h2>⚙️ Admin Panel - Radio Management</h2>
+
+            <div class="tabs">
+                <button class="tab active" data-tab="upload" onclick="switchAdminTab('upload')">Upload</button>
+                <button class="tab" data-tab="create" onclick="switchAdminTab('create')">Create Song</button>
+                <button class="tab" data-tab="library" onclick="switchAdminTab('library')">Song Library</button>
+                <button class="tab" data-tab="artists" onclick="switchAdminTab('artists')">Artists</button>
+                <button class="tab" data-tab="albums" onclick="switchAdminTab('albums')">Albums</button>
+                <button class="tab" data-tab="tags" onclick="switchAdminTab('tags')">Tags</button>
+                <button class="tab" data-tab="update" onclick="switchAdminTab('update')">Update</button>
+                <button class="tab" data-tab="delete" onclick="switchAdminTab('delete')">Delete</button>
+            </div>
+
+            <!-- Upload Song Tab -->
+            <div id="admin-upload-tab" class="tab-content active">
+                <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
+                    POST /api/songs/upload - Upload audio file with metadata
+                </p>
+                <form id="upload-form">
+                    <input type="text" id="upload-title" placeholder="Song Title" required>
+                    <input type="text" id="upload-artist-ids" placeholder="Artist IDs (e.g. 1, 2)">
+                    <input type="number" id="upload-album-id" placeholder="Album ID (optional)">
+                    <div style="margin: 10px 0;">
+                        <label style="display: block; font-size: 0.8rem; color: #888; margin-bottom: 5px;">Select audio
+                            file:</label>
+                        <input type="file" id="song-file" accept="audio/*" required>
+                    </div>
+                    <button type="submit">Upload & Convert</button>
+                </form>
+                <div id="upload-status" style="margin-top: 10px;"></div>
+            </div>
+
+            <!-- Create Metadata Tab -->
+            <div id="admin-create-tab" class="tab-content">
+                <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
+                    POST /api/songs - Create song metadata only
+                </p>
+                <form id="create-song-form">
+                    <input type="text" id="create-title" placeholder="Song Title" required>
+                    <input type="text" id="create-artist-ids" placeholder="Artist IDs (e.g. 1, 2)">
+                    <input type="number" id="create-album-id" placeholder="Album ID (optional)">
+                    <button type="submit">Create Song Metadata</button>
+                </form>
+                <div id="create-status" style="margin-top: 10px;"></div>
+            </div>
+
+            <!-- Song Library Tab -->
+            <div id="admin-library-tab" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <p style="color: #aaa; font-size: 0.9rem;">Current Database Library (GET /api/songs)</p>
+                    <button onclick="refreshSongLibrary()"
+                        style="width: auto; padding: 5px 15px; font-size: 0.8rem;">Refresh</button>
+                </div>
+                <div id="song-library-list" style="max-height: 400px; overflow-y: auto;">
+                    <p style="text-align: center; color: #666; padding: 20px;">Click Refresh to load songs...</p>
+                </div>
+
+                <!-- Tag Assignment Inline (appears when a song is selected) -->
+                <div id="tag-assignment-panel" class="hidden"
+                    style="margin-top: 20px; padding: 15px; border: 1px solid #444; border-radius: 8px; background: rgba(0,0,0,0.2);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 id="tag-assignment-title" style="margin: 0;">Manage Tags for Song</h3>
+                        <button onclick="closeTagPanel()"
+                            style="width: auto; background: none; border: none; color: #888; cursor: pointer; font-size: 1.2rem;">&times;</button>
+                    </div>
+                    <form id="assign-tag-form" style="margin-top: 15px; display: flex; gap: 8px; flex-wrap: wrap;">
+                        <select id="assign-tag-id" required style="flex: 1; min-width: 150px;"></select>
+                        <input type="number" id="assign-tag-score" step="0.1" min="0" max="1"
+                            placeholder="Score (0.0-1.0)" required style="width: 120px;">
+                        <button type="submit" style="width: auto;">Assign</button>
+                    </form>
+                    <div id="song-tags-list" style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                </div>
+            </div>
+
+            <!-- Artists Management Tab -->
+            <div id="admin-artists-tab" class="tab-content">
+                <h3>Add Artist</h3>
+                <form id="create-artist-form" style="margin-top: 10px; display: flex; gap: 8px;">
+                    <input type="text" id="artist-name-input" placeholder="Artist Name" required>
+                    <button type="submit" style="width: auto; white-space: nowrap;">Add Artist</button>
+                </form>
+                <div id="artist-status" style="margin-top: 10px;"></div>
+
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; margin-bottom: 10px;">
+                    <h3 style="margin: 0;">Artist List</h3>
+                    <button onclick="refreshArtistLibrary()"
+                        style="width: auto; padding: 5px 15px; font-size: 0.8rem;">Refresh</button>
+                </div>
+                <div id="artist-library-list" style="max-height: 300px; overflow-y: auto;">
+                    <p style="text-align: center; color: #666; padding: 20px;">Click Refresh to load artists...</p>
+                </div>
+            </div>
+
+            <!-- Albums Management Tab -->
+            <div id="admin-albums-tab" class="tab-content">
+                <h3>Add Album</h3>
+                <form id="create-album-form" style="margin-top: 10px; display: flex; gap: 8px;">
+                    <input type="text" id="album-title-input" placeholder="Album Title" required>
+                    <button type="submit" style="width: auto; white-space: nowrap;">Add Album</button>
+                </form>
+                <div id="album-status" style="margin-top: 10px;"></div>
+
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; margin-bottom: 10px;">
+                    <h3 style="margin: 0;">Album List</h3>
+                    <button onclick="refreshAlbumLibrary()"
+                        style="width: auto; padding: 5px 15px; font-size: 0.8rem;">Refresh</button>
+                </div>
+                <div id="album-library-list" style="max-height: 300px; overflow-y: auto;">
+                    <p style="text-align: center; color: #666; padding: 20px;">Click Refresh to load albums...</p>
+                </div>
+            </div>
+
+            <!-- Tags Management Tab -->
+            <div id="admin-tags-tab" class="tab-content">
+                <h3>Add Tag</h3>
+                <form id="create-tag-form" style="margin-top: 10px; display: flex; gap: 8px;">
+                    <input type="text" id="tag-name-input" placeholder="Tag Name (e.g. Summer)" required>
+                    <button type="submit" style="width: auto; white-space: nowrap;">Add Tag</button>
+                </form>
+                <div id="tag-status" style="margin-top: 10px;"></div>
+
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; margin-bottom: 10px;">
+                    <h3 style="margin: 0;">Tag List</h3>
+                    <button onclick="refreshTagLibrary()"
+                        style="width: auto; padding: 5px 15px; font-size: 0.8rem;">Refresh</button>
+                </div>
+                <div id="tag-library-list" style="max-height: 300px; overflow-y: auto;">
+                    <p style="text-align: center; color: #666; padding: 20px;">Click Refresh to load tags...</p>
+                </div>
+
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333;">
+                    <h3>Search Songs by Tags (Vector Match)</h3>
+                    <div id="tag-search-container"
+                        style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                        <div style="display: flex; gap: 8px;">
+                            <select id="search-tag-select" style="flex: 1;"></select>
+                            <input type="number" id="search-tag-score" step="0.1" min="0" max="1" value="0.5"
+                                style="width: 80px;">
+                            <button onclick="addSearchTag()" style="width: auto;">Add to Filter</button>
+                        </div>
+                        <div id="active-search-tags"
+                            style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;"></div>
+                        <button onclick="executeTagSearch()"
+                            style="background: #00d4ff; color: black; font-weight: bold;">Search (Vector
+                            Distance)</button>
+                        <div id="tag-search-results" style="margin-top: 15px; max-height: 300px; overflow-y: auto;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Update Song Tab -->
+            <div id="admin-update-tab" class="tab-content">
+                <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
+                    POST /api/songs/{id} - Update existing song
+                </p>
+                <form id="update-song-form">
+                    <input type="number" id="update-song-id" placeholder="Song ID" required>
+                    <input type="text" id="update-title" placeholder="New Title (optional)">
+                    <input type="text" id="update-artist-ids" placeholder="New Artist IDs (optional, e.g. 1, 2)">
+                    <input type="number" id="update-album-id" placeholder="New Album ID (optional)">
+                    <button type="submit">Update Song</button>
+                </form>
+                <div id="update-status" style="margin-top: 10px;"></div>
+            </div>
+
+            <!-- Delete Song Tab -->
+            <div id="admin-delete-tab" class="tab-content">
+                <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">
+                    DELETE /api/songs/{id} - Delete song and file
+                </p>
+                <form id="delete-song-form">
+                    <input type="number" id="delete-song-id" placeholder="Song ID" required>
+                    <button type="submit" class="danger">Delete Song</button>
+                </form>
+                <div id="delete-status" style="margin-top: 10px;"></div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid">
+            <div class="panel">
+                <h2>📜 Song History</h2>
+                <p style="color: #666; font-size: 0.85rem; margin-bottom: 10px;">GET /api/status</p>
+                <div id="history-list"></div>
+            </div>
+
+            <div class="panel">
+                <h2>👥 Live Listeners (<span id="listener-count">0</span>)</h2>
+                <p style="color: #666; font-size: 0.85rem; margin-bottom: 10px;">GET /api/status (updates every 1s)</p>
+                <div id="listener-list"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let serverConnectTime = null;
+        let heartbeatInterval = null;
+        let statusInterval = null;
+        let isAuthenticated = false;
+        let currentUser = null;
+
+        const audio = document.getElementById('audio');
+
+        // Tab switching
+        function switchTab(tab) {
+            document.querySelectorAll('#auth-forms .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#auth-forms .tab-content').forEach(c => c.classList.remove('active'));
+
+            if (tab === 'login') {
+                document.querySelector('#auth-forms .tab:nth-child(1)').classList.add('active');
+                document.getElementById('login-tab').classList.add('active');
+            } else {
+                document.querySelector('#auth-forms .tab:nth-child(2)').classList.add('active');
+                document.getElementById('register-tab').classList.add('active');
+            }
+        }
+
+        function switchAdminTab(tab) {
+            document.querySelectorAll('#admin-panel .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#admin-panel .tab-content').forEach(c => c.classList.remove('active'));
+
+            document.querySelector(`#admin-panel .tab[data-tab="${tab}"]`).classList.add('active');
+            document.getElementById(`admin-${tab}-tab`).classList.add('active');
+
+            if (tab === 'library') refreshSongLibrary();
+            if (tab === 'artists') refreshArtistLibrary();
+            if (tab === 'albums') refreshAlbumLibrary();
+            if (tab === 'tags') refreshTagLibrary();
+        }
+
+        // --- Library Refreshing ---
+        async function refreshSongLibrary() {
+            const list = document.getElementById('song-library-list');
+            list.innerHTML = '<p style="text-align: center; color: #aaa; padding: 20px;">Loading songs...</p>';
+            try {
+                const res = await fetch('/api/songs', { credentials: 'include' });
+                const songs = await res.json();
+                if (songs.length === 0) {
+                    list.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No songs in database</p>';
+                    return;
+                }
+                list.innerHTML = '<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">' +
+                    '<tr style="border-bottom: 2px solid #333; text-align: left;">' +
+                    '<th style="padding: 8px;">ID</th><th style="padding: 8px;">Title</th><th style="padding: 8px;">Artists</th><th style="padding: 8px;">Album</th><th style="padding: 8px;">Actions</th></tr>' +
+                    songs.map(s => `<tr style="border-bottom: 1px solid #222;">
+                        <td style="padding: 8px; font-family: monospace; color: #00d4ff;">${s.id}</td>
+                        <td style="padding: 8px;">${escapeHtml(s.title)}</td>
+                        <td style="padding: 8px; color: #aaa;">${escapeHtml(s.artist_names || 'None')}</td>
+                        <td style="padding: 8px; color: #666;">${escapeHtml(s.album_title || '-')}</td>
+                        <td style="padding: 8px;">
+                            <button onclick="openTagPanel(${s.id}, '${escapeHtml(s.title).replace(/'/g, "\\'")}')" style="width: auto; padding: 2px 8px; font-size: 0.75rem;">🏷️ Tags</button>
+                        </td>
+                    </tr>`).join('') + '</table>';
+            } catch (e) {
+                list.innerHTML = `<p style="color: coral; padding: 10px;">Error: ${e.message}</p>`;
+            }
+        }
+
+        async function refreshArtistLibrary() {
+            const list = document.getElementById('artist-library-list');
+            list.innerHTML = '<p style="text-align: center; color: #aaa; padding: 20px;">Loading artists...</p>';
+            try {
+                const res = await fetch('/api/artists', { credentials: 'include' });
+                const artists = await res.json();
+                if (artists.length === 0) {
+                    list.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No artists in database</p>';
+                    return;
+                }
+                list.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">' +
+                    artists.map(a => `<div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                        <span><span style="color: #00d4ff; font-family: monospace;">#${a.id}</span> ${escapeHtml(a.name)}</span>
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="editArtist(${a.id}, '${escapeHtml(a.name).replace(/'/g, "\\'")}')" style="width: auto; padding: 2px 6px; font-size: 0.7rem; background: rgba(255,255,255,0.1); color: white;">Edit</button>
+                            <button onclick="deleteArtist(${a.id})" style="width: auto; padding: 2px 6px; font-size: 0.7rem; background: rgba(255,68,68,0.2); color: #ff4444;">Del</button>
+                        </div>
+                    </div>`).join('') + '</div>';
+            } catch (e) {
+                list.innerHTML = `<p style="color: coral; padding: 10px;">Error: ${e.message}</p>`;
+            }
+        }
+
+        async function refreshAlbumLibrary() {
+            const list = document.getElementById('album-library-list');
+            list.innerHTML = '<p style="text-align: center; color: #aaa; padding: 20px;">Loading albums...</p>';
+            try {
+                const res = await fetch('/api/albums', { credentials: 'include' });
+                const albums = await res.json();
+                if (albums.length === 0) {
+                    list.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No albums in database</p>';
+                    return;
+                }
+                list.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">' +
+                    albums.map(a => `<div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                        <span><span style="color: #00d4ff; font-family: monospace;">#${a.id}</span> ${escapeHtml(a.title)}</span>
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="editAlbum(${a.id}, '${escapeHtml(a.title).replace(/'/g, "\\'")}')" style="width: auto; padding: 2px 6px; font-size: 0.7rem; background: rgba(255,255,255,0.1); color: white;">Edit</button>
+                            <button onclick="deleteAlbum(${a.id})" style="width: auto; padding: 2px 6px; font-size: 0.7rem; background: rgba(255,68,68,0.2); color: #ff4444;">Del</button>
+                        </div>
+                    </div>`).join('') + '</div>';
+            } catch (e) {
+                list.innerHTML = `<p style="color: coral; padding: 10px;">Error: ${e.message}</p>`;
+            }
+        }
+
+        async function editArtist(id, currentName) {
+            const newName = prompt("Enter new name for artist:", currentName);
+            if (newName === null || newName === currentName || newName.trim() === "") return;
+
+            try {
+                const res = await fetch(`/api/artists/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name: newName.trim() })
+                });
+                if (res.ok) {
+                    showStatus('artist-status', `✓ Artist updated`, 'success');
+                    refreshArtistLibrary();
+                } else {
+                    const error = await res.text();
+                    showStatus('artist-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('artist-status', `✗ ${e.message}`, 'error');
+            }
+        }
+
+        async function deleteArtist(id) {
+            if (!confirm(`Are you sure you want to delete artist #${id}? This will also remove matches in song links.`)) return;
+
+            try {
+                const res = await fetch(`/api/artists/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                if (res.ok) {
+                    showStatus('artist-status', `✓ Artist deleted`, 'success');
+                    refreshArtistLibrary();
+                } else {
+                    const error = await res.text();
+                    showStatus('artist-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('artist-status', `✗ ${e.message}`, 'error');
+            }
+        }
+
+        async function editAlbum(id, currentTitle) {
+            const newTitle = prompt("Enter new title for album:", currentTitle);
+            if (newTitle === null || newTitle === currentTitle || newTitle.trim() === "") return;
+
+            try {
+                const res = await fetch(`/api/albums/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ title: newTitle.trim() })
+                });
+                if (res.ok) {
+                    showStatus('album-status', `✓ Album updated`, 'success');
+                    refreshAlbumLibrary();
+                } else {
+                    const error = await res.text();
+                    showStatus('album-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('album-status', `✗ ${e.message}`, 'error');
+            }
+        }
+
+        async function deleteAlbum(id) {
+            if (!confirm(`Are you sure you want to delete album #${id}? Songs in this album will have their album ID cleared.`)) return;
+
+            try {
+                const res = await fetch(`/api/albums/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                if (res.ok) {
+                    showStatus('album-status', `✓ Album deleted`, 'success');
+                    refreshAlbumLibrary();
+                } else {
+                    const error = await res.text();
+                    showStatus('album-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('album-status', `✗ ${e.message}`, 'error');
+            }
+        }
+
+        // --- Tag Management ---
+        let currentSongIdForTags = null;
+        let activeSearchFilters = [];
+
+        async function refreshTagLibrary() {
+            const list = document.getElementById('tag-library-list');
+            try {
+                const res = await fetch('/api/tags', { credentials: 'include' });
+                const tags = await res.json();
+
+                // Update select dropdowns
+                const assignSelect = document.getElementById('assign-tag-id');
+                const searchSelect = document.getElementById('search-tag-select');
+                const tagOptions = tags.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+                assignSelect.innerHTML = tagOptions;
+                searchSelect.innerHTML = tagOptions;
+
+                if (tags.length === 0) {
+                    list.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No tags in database</p>';
+                    return;
+                }
+                list.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">' +
+                    tags.map(t => `<div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                        <span><span style="color: #00d4ff; font-family: monospace;">#${t.id}</span> ${escapeHtml(t.name)}</span>
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="editTag(${t.id}, '${escapeHtml(t.name).replace(/'/g, "\\'")}')" style="width: auto; padding: 2px 6px; font-size: 0.7rem;">Edit</button>
+                            <button onclick="deleteTag(${t.id})" style="width: auto; padding: 2px 6px; font-size: 0.7rem; background: rgba(255,68,68,0.2); color: #ff4444;">Del</button>
+                        </div>
+                    </div>`).join('') + '</div>';
+            } catch (e) {
+                list.innerHTML = `<p style="color: coral; padding: 10px;">Error: ${e.message}</p>`;
+            }
+        }
+
+        async function editTag(id, currentName) {
+            const newName = prompt("Enter new name for tag:", currentName);
+            if (!newName || newName === currentName) return;
+            try {
+                const res = await fetch(`/api/tags/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name: newName.trim() })
+                });
+                if (res.ok) {
+                    showStatus('tag-status', `✓ Tag updated`, 'success');
+                    refreshTagLibrary();
+                }
+            } catch (e) { alert(e.message); }
+        }
+
+        async function deleteTag(id) {
+            if (!confirm("Delete tag? This removes all song scorings for this tag.")) return;
+            try {
+                const res = await fetch(`/api/tags/${id}`, { method: 'DELETE', credentials: 'include' });
+                if (res.ok) {
+                    showStatus('tag-status', `✓ Tag deleted`, 'success');
+                    refreshTagLibrary();
+                }
+            } catch (e) { alert(e.message); }
+        }
+
+        async function openTagPanel(songId, songTitle) {
+            currentSongIdForTags = songId;
+            document.getElementById('tag-assignment-title').innerText = `🏷️ Manage Tags: ${songTitle}`;
+            document.getElementById('tag-assignment-panel').classList.remove('hidden');
+            await refreshSongTags();
+            await refreshTagLibrary(); // refresh dropdown
+        }
+
+        function closeTagPanel() {
+            document.getElementById('tag-assignment-panel').classList.add('hidden');
+            currentSongIdForTags = null;
+        }
+
+        async function refreshSongTags() {
+            const list = document.getElementById('song-tags-list');
+            try {
+                const res = await fetch(`/api/songs/${currentSongIdForTags}/tags`);
+                const tags = await res.json();
+                list.innerHTML = tags.map(t => `
+                    <div style="background: rgba(0,212,255,0.1); padding: 5px 12px; border-radius: 20px; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(0,212,255,0.3);">
+                        <span style="font-weight: bold;">${escapeHtml(t.name)}</span>
+                        <span style="color: #00d4ff;">${t.score.toFixed(2)}</span>
+                        <button onclick="removeSongTag(${t.tag_id})" style="width: auto; background: none; border: none; color: #ff4444; padding: 0; cursor: pointer; font-size: 1.1rem; line-height: 1;">&times;</button>
+                    </div>
+                `).join('');
+            } catch (e) { list.innerHTML = "Error loading tags"; }
+        }
+
+        async function removeSongTag(tagId) {
+            try {
+                const res = await fetch(`/api/songs/${currentSongIdForTags}/tags/${tagId}`, { method: 'DELETE', credentials: 'include' });
+                if (res.ok) refreshSongTags();
+            } catch (e) { alert(e.message); }
+        }
+
+        document.getElementById('assign-tag-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const tagId = parseInt(document.getElementById('assign-tag-id').value);
+            const score = parseFloat(document.getElementById('assign-tag-score').value);
+            try {
+                const res = await fetch(`/api/songs/${currentSongIdForTags}/tags`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ tag_id: tagId, score })
+                });
+                if (res.ok) {
+                    refreshSongTags();
+                }
+            } catch (e) { alert(e.message); }
+        });
+
+        function addSearchTag() {
+            const select = document.getElementById('search-tag-select');
+            const name = select.options[select.selectedIndex].text;
+            const score = parseFloat(document.getElementById('search-tag-score').value);
+
+            if (activeSearchFilters.some(f => f.name === name)) return;
+            activeSearchFilters.push({ name, target_score: score });
+            renderSearchFilters();
+        }
+
+        function renderSearchFilters() {
+            const container = document.getElementById('active-search-tags');
+            container.innerHTML = activeSearchFilters.map((f, i) => `
+                <div style="background: #333; padding: 4px 12px; border-radius: 4px; display: flex; gap: 8px;">
+                    ${escapeHtml(f.name)}: ${f.target_score}
+                    <button onclick="removeSearchFilter(${i})" style="width: auto; background: none; border: none; color: #ff4444; padding: 0; cursor: pointer;">&times;</button>
+                </div>
+            `).join('');
+        }
+
+        function removeSearchFilter(i) {
+            activeSearchFilters.splice(i, 1);
+            renderSearchFilters();
+        }
+
+        async function executeTagSearch() {
+            const resultsDiv = document.getElementById('tag-search-results');
+            resultsDiv.innerHTML = "Searching...";
+            try {
+                const res = await fetch('/api/tags/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(activeSearchFilters)
+                });
+                const results = await res.json();
+                if (results.length === 0) {
+                    resultsDiv.innerHTML = "No matches found.";
+                    return;
+                }
+                resultsDiv.innerHTML = '<table style="width: 100%; font-size: 0.8rem;">' +
+                    '<tr style="border-bottom: 1px solid #444;"><th>Song</th><th>Ref Dist</th></tr>' +
+                    results.map(r => `<tr><td>${escapeHtml(r.title)}</td><td style="color: #00d4ff;">${r.match_error.toFixed(4)}</td></tr>`).join('') +
+                    '</table>';
+            } catch (e) { resultsDiv.innerHTML = "Search failed: " + e.message; }
+        }
+
+        // Register
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (res.ok) {
+                    const user = await res.json();
+                    showLoggedIn(user);
+                } else {
+                    const error = await res.text();
+                    showStatus('auth-status', error, 'error');
+                }
+            } catch (e) {
+                showStatus('auth-status', `Error: ${e.message}`, 'error');
+            }
+        });
+
+        // Login
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const identity = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ identity, password })
+                });
+
+                if (res.ok) {
+                    const user = await res.json();
+                    showLoggedIn(user);
+                } else {
+                    showStatus('auth-status', 'Invalid credentials', 'error');
+                }
+            } catch (e) {
+                showStatus('auth-status', `Error: ${e.message}`, 'error');
+            }
+        });
+
+        // Edit Username
+        document.getElementById('edit-username-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newUsername = document.getElementById('new-username').value;
+
+            try {
+                const res = await fetch(`/api/users/${currentUser.id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username: newUsername })
+                });
+
+                if (res.ok) {
+                    const user = await res.json();
+                    currentUser = user;
+                    document.getElementById('current-username').textContent = user.username;
+                    showStatus('edit-username-status', '✓ Username updated successfully', 'success');
+                    document.getElementById('new-username').value = '';
+                } else {
+                    const error = await res.text();
+                    showStatus('edit-username-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('edit-username-status', `✗ ${e.message}`, 'error');
+            }
+        });
+
+        // Logout
+        async function logout() {
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                showLoggedOut();
+            } catch (e) {
+                console.error('Logout error:', e);
+            }
+        }
+
+        // Check if already logged in
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/auth/me', { credentials: 'include' });
+                if (res.ok) {
+                    const user = await res.json();
+                    showLoggedIn(user);
+                }
+            } catch (e) {
+                // Not logged in, that's fine
+            }
+        }
+
+        function showLoggedIn(user) {
+            isAuthenticated = true;
+            currentUser = user;
+            document.getElementById('auth-forms').classList.add('hidden');
+            document.getElementById('auth-logged-in').classList.remove('hidden');
+            document.getElementById('current-username').textContent = user.username;
+            document.getElementById('current-role').textContent = user.role;
+            showStatus('auth-status', `✓ Logged in as ${user.username}`, 'success');
+
+            // Show admin panel if admin
+            if (user.role === 'admin') {
+                document.getElementById('admin-panel').classList.remove('hidden');
+            }
+        }
+
+        function showLoggedOut() {
+            isAuthenticated = false;
+            currentUser = null;
+            document.getElementById('auth-forms').classList.remove('hidden');
+            document.getElementById('auth-logged-in').classList.add('hidden');
+            document.getElementById('admin-panel').classList.add('hidden');
+            showStatus('auth-status', 'Logged out', 'info');
+        }
+
+        function showStatus(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = `<div class="status-msg ${type}">${message}</div>`;
+        }
+
+        // Upload Song
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            showStatus('upload-status', 'Uploading & Converting...', 'info');
+
+            const formData = new FormData();
+            formData.append('file', document.getElementById('song-file').files[0]);
+            formData.append('title', document.getElementById('upload-title').value);
+
+            const artistIds = document.getElementById('upload-artist-ids').value;
+            if (artistIds) formData.append('artist_ids', artistIds);
+
+            const albumId = document.getElementById('upload-album-id').value;
+            if (albumId) formData.append('album_id', albumId);
+
+            try {
+                const res = await fetch('/api/songs/upload', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    showStatus('upload-status', `✓ ${data.message} (ID: ${data.song_id})`, 'success');
+                    document.getElementById('upload-form').reset();
+                    refreshSongLibrary();
+                } else {
+                    const error = await res.text();
+                    showStatus('upload-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('upload-status', `✗ ${e.message}`, 'error');
+            }
+        });
+
+        // Create Artist
+        document.getElementById('create-artist-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('artist-name-input').value;
+            try {
+                const res = await fetch('/api/artists', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name })
+                });
+                if (res.ok) {
+                    const artist = await res.json();
+                    showStatus('artist-status', `✓ Artist '${artist.name}' created (ID: ${artist.id})`, 'success');
+                    document.getElementById('create-artist-form').reset();
+                    refreshArtistLibrary();
+                } else {
+                    const error = await res.text();
+                    showStatus('artist-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('artist-status', `✗ ${e.message}`, 'error');
+            }
+        });
+
+        // Create Tag
+        document.getElementById('create-tag-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('tag-name-input').value;
+            try {
+                const res = await fetch('/api/tags', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name })
+                });
+                if (res.ok) {
+                    showStatus('tag-status', `✓ Tag created`, 'success');
+                    document.getElementById('create-tag-form').reset();
+                    refreshTagLibrary();
+                }
+            } catch (e) { alert(e.message); }
+        });
+
+        // Create Album
+        document.getElementById('create-album-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('album-title-input').value;
+            try {
+                const res = await fetch('/api/albums', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ title })
+                });
+                if (res.ok) {
+                    const album = await res.json();
+                    showStatus('album-status', `✓ Album '${album.title}' created (ID: ${album.id})`, 'success');
+                    document.getElementById('create-album-form').reset();
+                    refreshAlbumLibrary();
+                } else {
+                    const error = await res.text();
+                    showStatus('album-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('album-status', `✗ ${e.message}`, 'error');
+            }
+        });
+
+        // Create Song
+        document.getElementById('create-song-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const payload = {
+                title: document.getElementById('create-title').value
+            };
+
+            const artistIdsStr = document.getElementById('create-artist-ids').value;
+            if (artistIdsStr) {
+                payload.artist_ids = artistIdsStr.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+            }
+
+            const albumId = document.getElementById('create-album-id').value;
+            if (albumId) payload.album_id = parseInt(albumId);
+
+            try {
+                const res = await fetch('/api/songs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    const song = await res.json();
+                    showStatus('create-status', `✓ Song created (ID: ${song.id})`, 'success');
+                    document.getElementById('create-song-form').reset();
+                    refreshSongLibrary();
+                } else {
+                    const error = await res.text();
+                    showStatus('create-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('create-status', `✗ ${e.message}`, 'error');
+            }
+        });
+
+        // Update Song
+        document.getElementById('update-song-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const songId = document.getElementById('update-song-id').value;
+            const payload = {};
+
+            const title = document.getElementById('update-title').value;
+            if (title) payload.title = title;
+
+            const artistIdsStr = document.getElementById('update-artist-ids').value;
+            if (artistIdsStr) {
+                payload.artist_ids = artistIdsStr.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+            }
+
+            const albumId = document.getElementById('update-album-id').value;
+            if (albumId) payload.album_id = parseInt(albumId);
+
+            try {
+                const res = await fetch(`/api/songs/${songId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    const song = await res.json();
+                    showStatus('update-status', `✓ Song updated: ${song.title}`, 'success');
+                    refreshSongLibrary();
+                } else {
+                    const error = await res.text();
+                    showStatus('update-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('update-status', `✗ ${e.message}`, 'error');
+            }
+        });
+
+        // Delete Song
+        document.getElementById('delete-song-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const songId = document.getElementById('delete-song-id').value;
+
+            if (!confirm(`Are you sure you want to delete song #${songId}?`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/songs/${songId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+
+                if (res.ok) {
+                    showStatus('delete-status', `✓ Song #${songId} deleted`, 'success');
+                    document.getElementById('delete-song-form').reset();
+                    refreshSongLibrary();
+                } else {
+                    const error = await res.text();
+                    showStatus('delete-status', `✗ ${error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('delete-status', `✗ ${e.message}`, 'error');
+            }
+        });
+
+        // Start listening
+        async function startListening() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                serverConnectTime = data.server_time;
+            } catch (e) {
+                alert('Failed to connect to server');
+                return;
+            }
+
+            document.getElementById('status-text').textContent = 'Connecting...';
+
+            audio.src = `/api/stream?t=${Date.now()}`;
+            audio.load();
+
+            audio.addEventListener('canplay', () => {
+                audio.play().catch(e => {
+                    console.log('Autoplay blocked');
+                    document.getElementById('status-text').textContent = 'Ready (click play)';
+                });
+            });
+
+            audio.addEventListener('playing', () => {
+                document.getElementById('status-text').textContent = 'Live';
+            });
+
+            // Start heartbeat
+            heartbeatInterval = setInterval(sendHeartbeat, 1000);
+            statusInterval = setInterval(fetchStatus, 1000);
+            fetchStatus();
+        }
+
+        async function sendHeartbeat() {
+            if (!serverConnectTime || audio.paused) return;
+
+            try {
+                await fetch('/api/heartbeat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        connect_time: serverConnectTime,
+                        played_seconds: audio.currentTime
+                    })
+                });
+            } catch (e) {
+                console.error('Heartbeat failed:', e);
+            }
+        }
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                renderHistory(data.history);
+                renderListeners(data.listeners);
+            } catch (e) {
+                console.error('Status fetch failed:', e);
+            }
+        }
+
+        function renderHistory(history) {
+            const container = document.getElementById('history-list');
+            if (history.length === 0) {
+                container.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No songs played yet</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            [...history].reverse().forEach((song, index) => {
+                const isActive = index === 0;
+                container.innerHTML += `
+            <div class="song-card ${isActive ? 'active' : ''}">
+                <div style="font-weight: 600; margin-bottom: 4px;">${escapeHtml(song.title)}</div>
+                ${song.artist ? `<div style="color: #aaa; font-size: 0.9rem;">${escapeHtml(song.artist)}</div>` : ''}
+                <div style="color: #666; font-size: 0.85rem; margin-top: 4px;">
+                    ID #${song.id} • ${song.duration_seconds.toFixed(1)}s
+                </div>
+            </div>
+        `;
+            });
+        }
+
+        function renderListeners(listeners) {
+            const container = document.getElementById('listener-list');
+            document.getElementById('listener-count').textContent = listeners.length;
+
+            if (listeners.length === 0) {
+                container.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No listeners yet</div>';
+                return;
+            }
+
+            // Sort by drift (best sync first)
+            listeners.sort((a, b) => Math.abs(a.drift_seconds) - Math.abs(b.drift_seconds));
+
+            container.innerHTML = '';
+            listeners.forEach(listener => {
+                const badge = listener.is_authenticated
+                    ? '<span class="badge auth">✓ User</span>'
+                    : '<span class="badge anon">Anonymous</span>';
+
+                // Calculate drift display
+                const drift = listener.drift_seconds;
+                const absDrift = Math.abs(drift);
+                let driftClass = 'good';
+                if (absDrift > 1.0) driftClass = 'bad';
+                else if (absDrift > 0.5) driftClass = 'ok';
+
+                const driftText = drift > 0
+                    ? `+${drift.toFixed(2)}s`
+                    : `${drift.toFixed(2)}s`;
+
+                container.innerHTML += `
+            <div class="listener-row">
+                <span>
+                    ${escapeHtml(listener.username)}
+                    ${badge}
+                    <span style="color: #666; font-size: 0.85rem; margin-left: 8px;">#${listener.current_song_id}</span>
+                </span>
+                <span class="drift ${driftClass}">${driftText}</span>
+            </div>
+        `;
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize
+        checkAuth();
+    </script>
+</body>
+
+</html>
