@@ -1,0 +1,1 @@
+- [ ] Generating a new cookie key on installation if not found.
