@@ -10,8 +10,7 @@ pub async fn find_all(pool: &SqlitePool) -> Result<Vec<Song>, String> {
             s.title, 
             s.album_id,
             al.title as album_title,
-            GROUP_CONCAT(a.name, ', ') as artist_names,
-            s.has_image as "has_image!"
+            GROUP_CONCAT(a.name, ', ') as artist_names
         FROM songs s
         LEFT JOIN song_artists sa ON s.id = sa.song_id
         LEFT JOIN artists a ON sa.artist_id = a.id
@@ -35,8 +34,7 @@ pub async fn search(pool: &SqlitePool, query: &str) -> Result<Vec<Song>, String>
             s.title, 
             s.album_id,
             al.title as album_title,
-            GROUP_CONCAT(a.name, ', ') as artist_names,
-            s.has_image as "has_image!"
+            GROUP_CONCAT(a.name, ', ') as artist_names
         FROM songs s
         LEFT JOIN song_artists sa ON s.id = sa.song_id
         LEFT JOIN artists a ON sa.artist_id = a.id
@@ -62,8 +60,7 @@ pub async fn find_by_id(pool: &SqlitePool, id: i64) -> Result<Option<Song>, Stri
             s.title, 
             s.album_id,
             al.title as album_title,
-            GROUP_CONCAT(a.name, ', ') as artist_names,
-            s.has_image as "has_image!"
+            GROUP_CONCAT(a.name, ', ') as artist_names
         FROM songs s
         LEFT JOIN song_artists sa ON s.id = sa.song_id
         LEFT JOIN artists a ON sa.artist_id = a.id
@@ -162,19 +159,6 @@ pub async fn update(pool: &SqlitePool, id: i64, dto: UpdateSongDto) -> Result<So
     find_by_id(pool, id)
         .await?
         .ok_or("Song not found after update".to_string())
-}
-
-pub async fn set_has_image(pool: &SqlitePool, id: i64, has_image: bool) -> Result<(), String> {
-    sqlx::query!(
-        "UPDATE songs SET has_image = ? WHERE id = ?",
-        has_image,
-        id
-    )
-    .execute(pool)
-    .await
-    .map_err(|e| e.to_string())?;
-
-    Ok(())
 }
 
 pub async fn delete(pool: &SqlitePool, id: i64) -> Result<(), String> {
