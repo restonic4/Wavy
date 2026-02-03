@@ -9,7 +9,7 @@ I am currently working on refactoring and cleaning up the initial AI generated c
 - Refactoring and cleanup: If you want to help cleaning the codebase, fixing issues or optimizating, feel free to so do! 
 - Issues: Please feel free to open an issue if you spot bugs or have suggestions.
 
-This is my first open-source project. If you see something that could be improved in terms of project structure or anything else, I’d love to hear your feedback!
+This is my first propper open-source project. If you see something that could be improved in terms of project structure or anything else, I’d love to hear your feedback!
 
 # 📝 Commit Message Convention
 
