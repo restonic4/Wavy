@@ -3,12 +3,7 @@ use sqlx::FromRow;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum UserRole {
-    User,
-    MiniMod,
-    Mod,
-    Admin,
-}
+pub enum UserRole { User, Admin, }
 
 impl Default for UserRole {
     fn default() -> Self {

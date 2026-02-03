@@ -10,19 +10,9 @@ use crate::orm::users::{models::User, repository};
 
 pub const AUTH_COOKIE_NAME: &str = "auth_session";
 
-// Extractors
-
 pub struct AuthUser(pub User);
 
 impl AuthUser {
-    pub fn is_minimod(&self) -> bool {
-        matches!(self.0.role.as_str(), "minimod" | "mod" | "admin")
-    }
-
-    pub fn is_mod(&self) -> bool {
-        matches!(self.0.role.as_str(), "mod" | "admin")
-    }
-
     pub fn is_admin(&self) -> bool {
         matches!(self.0.role.as_str(), "admin")
     }
