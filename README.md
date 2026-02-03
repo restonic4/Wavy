@@ -1,0 +1,3 @@
+# WIP
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md)
