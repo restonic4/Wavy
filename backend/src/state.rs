@@ -53,7 +53,7 @@ pub struct AppState {
     pub buffer_history: Arc<RwLock<VecDeque<AudioFrame>>>,
     pub station: Arc<RwLock<StationData>>,
     pub db: SqlitePool,
-    pub key: Key,
+    pub cookie_key: Key,
 }
 
 impl FromRef<AppState> for Arc<RwLock<StationData>> {
@@ -64,6 +64,6 @@ impl FromRef<AppState> for Arc<RwLock<StationData>> {
 
 impl FromRef<AppState> for Key {
     fn from_ref(state: &AppState) -> Self {
-        state.key.clone()
+        state.cookie_key.clone()
     }
 }

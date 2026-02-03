@@ -29,7 +29,9 @@ async fn main() {
     dotenv().ok();
 
     tracing_subscriber::fmt::init();
-    tracing::info!("🎵 Starting Wavy Radio Server v2.0...");
+    
+    let version = env!("CARGO_PKG_VERSION");
+    tracing::info!("Starting Wavy Radio Server v{}", version);
 
     // DB initialization
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
@@ -45,7 +47,7 @@ async fn main() {
         .await
         .expect("Failed to connect to database");
 
-    tracing::info!("💽 Database connected. Running migrations...");
+    tracing::info!("Database connected. Running migrations...");
 
     // Migrations
     sqlx::migrate!("./migrations")
@@ -64,15 +66,15 @@ async fn main() {
     let station_data = Arc::new(RwLock::new(StationData::default()));
 
     // Load signing key from environment variable
-    let key_str = env::var("COOKIE_KEY").expect("COOKIE_KEY must be set in .env");
-    let key = Key::from(key_str.as_bytes());
+    let cookie_key_str = env::var("COOKIE_KEY").expect("COOKIE_KEY must be set in .env");
+    let cookie_key = Key::from(cookie_key_str.as_bytes());
 
     let app_state = AppState {
         tx: radio_tx,
         buffer_history: buffer_history.clone(),
         station: station_data.clone(),
         db: pool,
-        key: key.clone(),
+        cookie_key: cookie_key.clone(),
     };
 
     // Start the loader (reads MP3 files and sends frames)
