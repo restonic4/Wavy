@@ -12,8 +12,6 @@ use axum::{
 };
 use std::collections::VecDeque;
 use std::env;
-use std::fs::File;
-use std::io::BufReader;
 use std::str::FromStr;
 use std::sync::Arc;
 use dotenvy::dotenv;
@@ -23,44 +21,15 @@ use tower_http::services::ServeFile;
 use tower_http::cors::CorsLayer;
 use axum::http::{Method, HeaderValue};
 use axum_extra::extract::cookie::Key;
-use flate2::Compression;
-use flate2::write::ZlibEncoder;
-use serde_json::Value;
 use streaming::{broadcaster, handlers, loader};
 
 mod error;
 mod streaming;
-
-fn test_compiler() -> Result<(), Box<dyn std::error::Error>> {
-    // 1. Read the arbitrary JSON
-    let input_path = "raw_songs/test.json";
-    let file = File::open(input_path).expect("Could not find file");
-    let reader = BufReader::new(file);
-    let json_data: Value = serde_json::from_reader(reader)?;
-
-    // 2. Prepare output file
-    let output_file = File::create("raw_songs/save.dat")?;
-
-    // 3. Chain: File -> Zlib Compressor -> MessagePack Serializer
-    // We use "Best" compression level for smallest size
-    let mut encoder = ZlibEncoder::new(output_file, Compression::best());
-
-    // 4. Serialize JSON object directly into the compressor as MessagePack
-    let mut serializer = rmp_serde::Serializer::new(&mut encoder);
-    serde::Serialize::serialize(&json_data, &mut serializer)?;
-
-    // 5. Finish writing
-    encoder.finish()?;
-
-    println!("Successfully compiled '{}' to 'save.dat'", input_path);
-    Ok(())
-}
+mod rhythm;
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-
-    test_compiler().expect("oops");
 
     tracing_subscriber::fmt::init();
 

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Save Decompiler</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        button { padding: 10px 20px; cursor: pointer; font-size: 16px; margin-bottom: 10px; }
+        textarea { width: 100%; height: 400px; font-family: monospace; padding: 10px; }
+        .status { margin-bottom: 10px; font-weight: bold; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+
+<h2>Decompiled Save Data</h2>
+
+<div id="status" class="status">Loading save.dat...</div>
+
+<button id="copyBtn" disabled>Copy JSON to Clipboard</button>
+
+<textarea id="output" readonly placeholder="Waiting for data..."></textarea>
+
+<script type="module">
+    import { decode } from 'https://cdn.jsdelivr.net/npm/@msgpack/msgpack@3.0.0-beta2/+esm';
+
+    const statusEl = document.getElementById('status');
+    const outputEl = document.getElementById('output');
+    const copyBtn = document.getElementById('copyBtn');
+
+    async function decompileSave() {
+        try {
+            // 1. Fetch the binary file
+            const response = await fetch('./save.dat');
+            if (!response.ok) throw new Error(`Failed to load file: ${response.statusText}`);
+
+            // 2. Native Decompression (Deflate)
+            if (!window.DecompressionStream) {
+                throw new Error("Your browser does not support DecompressionStream. Please use Chrome/Edge/Firefox 113+");
+            }
+            const ds = new DecompressionStream('deflate');
+            const decompressedStream = response.body.pipeThrough(ds);
+
+            // 3. Convert stream to ArrayBuffer
+            const decompressedResponse = new Response(decompressedStream);
+            const arrayBuffer = await decompressedResponse.arrayBuffer();
+
+            // 4. Decode MessagePack to Object
+            const jsonData = decode(new Uint8Array(arrayBuffer));
+
+            // 5. Display in Text Area (Pretty Print)
+            const jsonString = JSON.stringify(jsonData, null, 2);
+            outputEl.value = jsonString;
+
+            // Update UI
+            statusEl.innerText = "Success! Data decompiled.";
+            statusEl.className = "status success";
+            copyBtn.disabled = false;
+
+            // 6. Setup Copy Button
+            copyBtn.onclick = () => {
+                outputEl.select();
+                navigator.clipboard.writeText(jsonString).then(() => {
+                    const originalText = copyBtn.innerText;
+                    copyBtn.innerText = "Copied!";
+                    setTimeout(() => copyBtn.innerText = originalText, 2000);
+                });
+            };
+
+        } catch (e) {
+            console.error(e);
+            statusEl.innerText = "Error: " + e.message;
+            statusEl.className = "status error";
+            outputEl.value = e.stack || e.message;
+        }
+    }
+
+    decompileSave();
+</script>
+</body>
+</html>
