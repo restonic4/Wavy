@@ -110,6 +110,9 @@ fn stream_mp3_file(
         .make(&codec_params, &dec_opts)
         .map_err(|e| format!("Decoder error: {}", e))?;
 
+    // Load rhythm data (save.dat) if present
+    let rhythm_data = std::fs::read("save.dat").ok();
+
     let duration_ms = if let Some(n_frames) = codec_params.n_frames {
         // This is an approximation for MP3, but usually accurate enough for progress bars
         (n_frames as f64 / sample_rate as f64 * 1000.0) as u64
@@ -120,7 +123,7 @@ fn stream_mp3_file(
     // Send SongStart event before first frame
     if tokio::task::block_in_place(|| {
         tokio::runtime::Handle::current().block_on(async {
-            tx.send(StreamMessage::SongStart(db_song.clone(), duration_ms)).await
+            tx.send(StreamMessage::SongStart(db_song.clone(), duration_ms, rhythm_data)).await
         })
     }).is_err() {
         return Err("Channel closed".to_string());

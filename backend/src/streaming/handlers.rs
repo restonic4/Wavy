@@ -41,6 +41,7 @@ pub async fn stream_audio(
     {
         let mut station_guard = state.station.write().await;
         let current_frame_index = station_guard.playback_position.current_frame_index;
+        let start_total_duration_ms = station_guard.playback_position.total_duration_ms;
         
         station_guard.listeners.insert(
             user_id,
@@ -51,6 +52,7 @@ pub async fn stream_audio(
                 last_heartbeat: Utc::now(),
                 start_frame_index: current_frame_index,
                 burst_buffer_ms,
+                start_total_duration_ms,
                 last_saved_at: Utc::now(),
             },
         );
@@ -98,29 +100,25 @@ pub async fn heartbeat(
     }
     
     let listener = station_guard.listeners.get(&user_id).unwrap();
+    let server_now_ms = station_guard.playback_position.total_duration_ms;
 
-    // Calculate how long the listener has been connected
-    let time_since_connection_ms = Utc::now()
-        .signed_duration_since(listener.connected_at)
-        .num_milliseconds() as u64;
-    
-    // ACCURATE DESYNC CALCULATION with client-side reporting:
+    let client_base_pos = listener.start_total_duration_ms.saturating_sub(listener.burst_buffer_ms);
+
+    // Calculate absolute client position in the server's global timeline
+    // Client received history starting at (start_total_duration_ms - burst_buffer_ms)
+    // Client has played client_position_ms since then.
     let desync_ms = if let Some(client_pos_ms) = query.client_position_ms {
-        let expected_position_ms = time_since_connection_ms;
-        (expected_position_ms as i64) - (client_pos_ms as i64)
+        let client_abs_pos = client_base_pos + client_pos_ms;
+        
+        (server_now_ms as i64) - (client_abs_pos as i64)
     } else {
-        if time_since_connection_ms < listener.burst_buffer_ms {
-            (listener.burst_buffer_ms - time_since_connection_ms) as i64
-        } else {
-            0
-        }
+        0
     };
-
-    //let server_position_ms = station_guard.playback_position.total_duration_ms;
-    //let listener_position_ms = query.client_position_ms.unwrap_or(time_since_connection_ms);
 
     Ok(Json(HeartbeatResponse {
         desync_ms,
+        server_position_ms: server_now_ms,
+        client_base_pos_ms: client_base_pos,
     }))
 }
 

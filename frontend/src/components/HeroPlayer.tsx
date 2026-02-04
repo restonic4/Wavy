@@ -11,8 +11,7 @@ import { useSync } from '@/contexts/SyncContext';
 import { cn } from '@/lib/utils';
 
 export const HeroPlayer = () => {
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-    const { isPlaying, setIsPlaying, reportProgress } = usePlayback();
+    const { isPlaying, setIsPlaying, reportProgress, audioRef, syncStatus } = usePlayback();
     const { currentSong: syncSong, isConnected } = useSync();
     const [volume, setVolume] = useState(0.8);
     const [isMuted, setIsMuted] = useState(false);
@@ -50,6 +49,7 @@ export const HeroPlayer = () => {
     */
 
     // Progress Calculation
+    // Unified Sync Engine: Drive progress from the actual audio position
     useEffect(() => {
         if (!syncSong) {
             setProgressMs(0);
@@ -57,14 +57,22 @@ export const HeroPlayer = () => {
         }
 
         const interval = setInterval(() => {
-            const startedAt = new Date(syncSong.started_at).getTime();
-            const now = Date.now();
-            const elapsed = now - startedAt;
-            setProgressMs(Math.max(0, elapsed));
-        }, 100);
+            if (!audioRef.current) return;
+
+            // 1. Get where the audio is in the global server timeline
+            // Since heartbeat might take a second to arrive, we use its latest data
+            const basePos = syncStatus?.client_base_pos_ms || 0;
+            const absolutePos = basePos + (audioRef.current.currentTime * 1000);
+
+            // 2. Calculate progress into the current song
+            // progress = (Current Absolute Position) - (Song Start Absolute Position)
+            const songProgress = absolutePos - syncSong.started_at_ms;
+
+            setProgressMs(Math.max(0, songProgress));
+        }, 33); // 30fps for smooth UI
 
         return () => clearInterval(interval);
-    }, [syncSong]);
+    }, [syncSong?.id, syncStatus?.client_base_pos_ms]);
 
     const formatTime = (ms: number) => {
         const totalSeconds = Math.floor(ms / 1000);
@@ -73,7 +81,6 @@ export const HeroPlayer = () => {
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
 
-    // Heartbeat Reporting
     useEffect(() => {
         let interval: NodeJS.Timeout;
         if (isPlaying) {

@@ -7,6 +7,7 @@ import { Navbar } from '@/components/Navbar';
 
 import { PlaybackProvider } from '@/contexts/PlaybackContext';
 import { SyncProvider } from '@/contexts/SyncContext';
+import { RhythmDebugger } from '@/components/RhythmDebugger';
 
 import { usePathname } from 'next/navigation';
 
@@ -19,6 +20,7 @@ export const ClientLayout = ({ children }: { children: React.ReactNode }) => {
             <PlaybackProvider>
                 <SyncProvider>
                     <Background />
+                    <RhythmDebugger />
                     {!isHomePage && <Navbar />}
                     <main className={`relative z-0 min-h-screen ${isHomePage ? '' : 'pt-24 pb-12'}`}>
                         {children}

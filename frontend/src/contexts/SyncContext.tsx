@@ -4,10 +4,17 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { api } from '@/lib/api';
 import { CurrentSong, StationEvent } from '@/lib/types';
 import { useAuth } from './AuthContext';
+import { decompileRhythm } from '@/lib/rhythm';
+
+export interface RhythmEvent {
+    time: number;
+    identifier: string;
+}
 
 interface SyncContextType {
     currentSong: CurrentSong | null;
     isConnected: boolean;
+    rhythmEvents: RhythmEvent[];
 }
 
 const SyncContext = createContext<SyncContextType | undefined>(undefined);
@@ -15,6 +22,7 @@ const SyncContext = createContext<SyncContextType | undefined>(undefined);
 export const SyncProvider = ({ children }: { children: React.ReactNode }) => {
     const { user, loading: authLoading } = useAuth();
     const [currentSong, setCurrentSong] = useState<CurrentSong | null>(null);
+    const [rhythmEvents, setRhythmEvents] = useState<RhythmEvent[]>([]);
     const [isConnected, setIsConnected] = useState(false);
     const wsRef = useRef<WebSocket | null>(null);
     const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -93,8 +101,28 @@ export const SyncProvider = ({ children }: { children: React.ReactNode }) => {
         };
     }, [user, authLoading]);
 
+    useEffect(() => {
+        if (currentSong?.rhythm_data) {
+            console.log('[Sync] Rhythm data detected, decompiling...');
+            decompileRhythm(currentSong.rhythm_data).then(data => {
+                console.log('[Sync] Decompiled rhythm JSON:', data);
+                if (Array.isArray(data)) {
+                    const sorted = [...data].sort((a, b) => a.time - b.time);
+                    setRhythmEvents(sorted as RhythmEvent[]);
+                } else {
+                    setRhythmEvents([]);
+                }
+            }).catch(err => {
+                console.error('[Sync] Failed to decompile rhythm:', err);
+                setRhythmEvents([]);
+            });
+        } else {
+            setRhythmEvents([]);
+        }
+    }, [currentSong]);
+
     return (
-        <SyncContext.Provider value={{ currentSong, isConnected }}>
+        <SyncContext.Provider value={{ currentSong, isConnected, rhythmEvents }}>
             {children}
         </SyncContext.Provider>
     );

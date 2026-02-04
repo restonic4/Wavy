@@ -16,6 +16,8 @@ export interface CurrentSong {
     album_title?: string;
     duration_ms: number;
     started_at: string;
+    started_at_ms: number; // Server global position
+    rhythm_data?: string;
 }
 
 export type StationEvent = {

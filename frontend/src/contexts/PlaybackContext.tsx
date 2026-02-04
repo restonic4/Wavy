@@ -5,6 +5,8 @@ import { api } from '@/lib/api';
 
 interface SyncStatus {
     desync_ms: number;
+    server_position_ms: number;
+    client_base_pos_ms: number;
 }
 
 interface PlaybackContextType {
@@ -12,6 +14,7 @@ interface PlaybackContextType {
     setIsPlaying: (playing: boolean) => void;
     syncStatus: SyncStatus | null;
     reportProgress: (positionMs: number) => Promise<void>;
+    audioRef: React.RefObject<HTMLAudioElement | null>;
 }
 
 const PlaybackContext = createContext<PlaybackContextType | undefined>(undefined);
@@ -19,6 +22,7 @@ const PlaybackContext = createContext<PlaybackContextType | undefined>(undefined
 export const PlaybackProvider = ({ children }: { children: React.ReactNode }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
+    const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
     const reportProgress = async (positionMs: number) => {
         try {
@@ -30,7 +34,7 @@ export const PlaybackProvider = ({ children }: { children: React.ReactNode }) =>
     };
 
     return (
-        <PlaybackContext.Provider value={{ isPlaying, setIsPlaying, syncStatus, reportProgress }}>
+        <PlaybackContext.Provider value={{ isPlaying, setIsPlaying, syncStatus, reportProgress, audioRef }}>
             {children}
         </PlaybackContext.Provider>
     );

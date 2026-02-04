@@ -22,18 +22,26 @@ pub async fn start(
         };
 
         let frame = match msg {
-            StreamMessage::SongStart(song, duration_ms) => {
-                let current_song = CurrentSong {
+            StreamMessage::SongStart(song, duration_ms, raw_rhythm) => {
+                let rhythm_data = raw_rhythm.map(|data| {
+                    use base64::{Engine as _, engine::general_purpose};
+                    general_purpose::STANDARD.encode(data)
+                });
+
+                let mut current_song = CurrentSong {
                     id: song.id,
                     title: song.title,
                     artist_names: song.artist_names,
                     album_title: song.album_title,
                     duration_ms,
                     started_at: Utc::now(),
+                    started_at_ms: 0, // Will be set below
+                    rhythm_data,
                 };
 
                 {
                     let mut station_guard = station.write().await;
+                    current_song.started_at_ms = station_guard.playback_position.total_duration_ms;
                     station_guard.current_song = Some(current_song.clone());
                 }
 

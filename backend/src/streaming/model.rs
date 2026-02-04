@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize)]
 pub struct HeartbeatResponse {
     pub desync_ms: i64,
+    pub server_position_ms: u64,
+    pub client_base_pos_ms: u64,
 }
 
 #[derive(Deserialize)]

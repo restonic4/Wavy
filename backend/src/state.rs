@@ -21,6 +21,8 @@ pub struct Listener {
     pub start_frame_index: u64,
     /// Duration of burst buffer sent to this listener (in milliseconds)
     pub burst_buffer_ms: u64,
+    /// The absolute server duration position when this listener connected
+    pub start_total_duration_ms: u64,
     /// Last time the listener's progress was saved to the database
     pub last_saved_at: DateTime<Utc>,
 }
@@ -63,6 +65,8 @@ pub struct CurrentSong {
     pub album_title: Option<String>,
     pub duration_ms: u64,
     pub started_at: DateTime<Utc>,
+    pub started_at_ms: u64, // Server total_duration_ms at start
+    pub rhythm_data: Option<String>, // Base64 encoded compiled rhythm data
 }
 
 #[derive(Default)]
@@ -79,7 +83,7 @@ pub struct StationData {
 #[derive(Clone)]
 pub enum StreamMessage {
     Frame(AudioFrame),
-    SongStart(Song, u64), // Song, duration_ms
+    SongStart(Song, u64, Option<Vec<u8>>), // Song, duration_ms, rhythm_data
 }
 
 /// An MP3 frame with its precise timing information
