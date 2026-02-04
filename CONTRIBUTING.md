@@ -21,5 +21,6 @@ To keep our history clean and readable, please use the following symbol-based pr
 | `[-]` | **Fix** | Bug fixes or minor changes |
 | `[!]` | **Breaking** | Breaking changes or a critical change |
 | `[#]` | **Meta** | Documentation, comments, etc |
+| `[?]` | **Meta** | Experimental, not finished |
 
 **Example:** `[+] Add dark mode support`
