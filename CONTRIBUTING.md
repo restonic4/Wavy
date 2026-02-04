@@ -24,5 +24,3 @@ To keep our history clean and readable, please use the following symbol-based pr
 | `[?]` | **Meta** | Experimental, not finished |
 
 **Example:** `[+] Add dark mode support`
-
-Testing github ruleset
