@@ -5,12 +5,11 @@ use axum::{
 };
 use tokio::fs;
 use tokio::process::Command;
-use std::path::PathBuf;
 use axum_extra::extract::Multipart;
 use crate::state::AppState;
 use crate::error::AppError;
 use crate::auth::AdminOnly;
-use super::models::{Song, CreateSongDto};
+use super::models::CreateSongDto;
 use super::repository;
 
 #[derive(serde::Serialize)]

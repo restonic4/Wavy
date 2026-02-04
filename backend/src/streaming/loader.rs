@@ -1,7 +1,7 @@
-use crate::config::{DATA_FOLDER, DEFAULT_SAMPLE_RATE};
+use crate::config::DEFAULT_SAMPLE_RATE;
 use crate::state::{AppState, AudioFrame, StreamMessage};
 use bytes::Bytes;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 use symphonia::core::codecs::DecoderOptions;

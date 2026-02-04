@@ -1,13 +1,8 @@
 .idea
 
+dev_data
+
 backend/target
-backend/data
-backend/raw_songs
-backend/*.mp3
-backend/radio.db
-backend/radio.db-shm
-backend/radio.db-wal
-backend/identifier.sqlite
 backend/.env
 
 frontend/node_modules

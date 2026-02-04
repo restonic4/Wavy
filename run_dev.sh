@@ -25,17 +25,33 @@ echo "🚀 Starting Wavy Development Environment..."
 
 # Start Backend
 echo "📦 Starting Backend (Rust)..."
-# Create dev data folders if they don't exist
-DEV_DATA_DIR="$(pwd)/../dev_data"
+# Ensure ~/.cargo/bin is in PATH so the script can find 'sqlx' and 'cargo'
+export PATH="$HOME/.cargo/bin:$PATH"
+
+# Create dev data folder if it doesn't exist
+DEV_DATA_DIR="$(pwd)/dev_data"
+mkdir -p "$DEV_DATA_DIR"
 
 echo "📂 Using Data Directory: $DEV_DATA_DIR"
 
-# Change directory so CWD is correct for .env loading
+# Set environment variables using the absolute path
+export DATA_DIR="$DEV_DATA_DIR"
+export DATABASE_URL="sqlite:$DEV_DATA_DIR/radio.db"
+
+# Change directory so CWD is correct for backend operations
 cd backend || exit
 
-# Run backend with custom environment variables for development
-DATA_DIR="$DEV_DATA_DIR" \
-DATABASE_URL="sqlite:$DEV_DATA_DIR/radio.db" \
+# Database Setup
+if [ ! -f "$DEV_DATA_DIR/radio.db" ]; then
+    echo "🗄️ Database not found. Creating $DEV_DATA_DIR/radio.db..."
+    # Explicitly pass the URL to ensure it reaches the right folder
+    sqlx database create --database-url "sqlite:$DEV_DATA_DIR/radio.db"
+fi
+
+echo "🔄 Running migrations..."
+sqlx migrate run --database-url "sqlite:$DEV_DATA_DIR/radio.db"
+
+# Run backend
 cargo run < /dev/null &
 BACKEND_PID=$!
 cd ..
