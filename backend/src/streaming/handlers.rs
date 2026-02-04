@@ -5,11 +5,11 @@ use axum::{
     http::{header, StatusCode},
     response::{Json, Response},
 };
-use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use chrono::{Utc};
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
 use crate::auth::AuthUser;
+use crate::streaming::model::{ActiveListenerDto, HeartbeatQuery, HeartbeatResponse};
 
 pub async fn stream_audio(
     State(state): State<AppState>,
@@ -80,17 +80,6 @@ pub async fn stream_audio(
         .unwrap()
 }
 
-
-#[derive(Serialize)]
-pub struct HeartbeatResponse {
-    pub desync_ms: i64,
-}
-
-#[derive(Deserialize)]
-pub struct HeartbeatQuery {
-    client_position_ms: Option<u64>,
-}
-
 pub async fn heartbeat(
     State(state): State<AppState>,
     user: AuthUser,
@@ -133,13 +122,6 @@ pub async fn heartbeat(
     Ok(Json(HeartbeatResponse {
         desync_ms,
     }))
-}
-
-#[derive(Serialize)]
-pub struct ActiveListenerDto {
-    pub username: String,
-    pub connected_at: DateTime<Utc>,
-    pub listen_time_ms: i64,
 }
 
 pub async fn get_active_listeners(
