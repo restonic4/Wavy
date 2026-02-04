@@ -38,7 +38,7 @@ pub fn start(tx: mpsc::Sender<StreamMessage>, state: Arc<AppState>) {
             });
 
             for song_data in play_list {
-                let file_path = PathBuf::from(DATA_FOLDER).join(format!("{}.mp3", song_data.id));
+                let file_path = crate::config::get_music_dir().join(format!("{}.mp3", song_data.id));
 
                 if !file_path.exists() {
                     tracing::warn!("Song #{} ({}) exists in DB but file not found at {:?}", song_data.id, song_data.title, file_path);
@@ -111,7 +111,7 @@ fn stream_mp3_file(
         .map_err(|e| format!("Decoder error: {}", e))?;
 
     // Load rhythm data (save.dat) if present
-    let rhythm_data = std::fs::read("save.dat").ok();
+    let rhythm_data = std::fs::read(crate::config::get_save_dat_path()).ok();
 
     let duration_ms = if let Some(n_frames) = codec_params.n_frames {
         // This is an approximation for MP3, but usually accurate enough for progress bars

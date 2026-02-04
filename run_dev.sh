@@ -25,8 +25,17 @@ echo "🚀 Starting Wavy Development Environment..."
 
 # Start Backend
 echo "📦 Starting Backend (Rust)..."
+# Create dev data folders if they don't exist
+DEV_DATA_DIR="$(pwd)/../dev_data"
+
+echo "📂 Using Data Directory: $DEV_DATA_DIR"
+
 # Change directory so CWD is correct for .env loading
 cd backend || exit
+
+# Run backend with custom environment variables for development
+DATA_DIR="$DEV_DATA_DIR" \
+DATABASE_URL="sqlite:$DEV_DATA_DIR/radio.db" \
 cargo run < /dev/null &
 BACKEND_PID=$!
 cd ..

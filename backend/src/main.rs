@@ -199,7 +199,7 @@ async fn main() {
         .unwrap();
 
     tracing::info!("Server ready at http://0.0.0.0:3000");
-    tracing::info!("Playing MP3s from: {}", config::DATA_FOLDER);
+    tracing::info!("Playing MP3s from: {}", config::get_music_dir().display());
 
     axum::serve(listener, app).await.unwrap();
 }

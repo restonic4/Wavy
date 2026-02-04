@@ -2,6 +2,7 @@
 
 REPO_URL="https://github.com/restonic4/Wavy.git"
 INSTALL_DIR="/var/www/Wavy"
+DATA_DIR="/var/lib/Wavy"
 
 BACKEND_SVC="wavy-backend.service"
 BACKEND_SRC="installer/services/backend.service"
@@ -62,6 +63,16 @@ else
     cd "$INSTALL_DIR" || exit
 fi
 
+# Data Directory Setup
+if [ ! -d "$DATA_DIR" ]; then
+    echo "Creating data directory at $DATA_DIR..."
+    sudo mkdir -p "$DATA_DIR"
+    
+    # Set permissions so www-data (and current user) can write
+    sudo chown -R $USER:www-data "$DATA_DIR"
+    sudo chmod -R 775 "$DATA_DIR"
+fi
+
 # Dependency Check/Install
 ./installer/dependencies.sh
 
@@ -75,10 +86,16 @@ if [ ! -f "$ENV_FILE" ]; then
     touch "$ENV_FILE"
 fi
 
-# Add DATABASE_URL if it doesn't exist
+# Add DATA_DIR if it doesn't exist
+if ! grep -q "DATA_DIR=" "$ENV_FILE"; then
+    echo "Adding DATA_DIR to .env..."
+    echo "DATA_DIR=$DATA_DIR" >> "$ENV_FILE"
+fi
+
+# Add DATABASE_URL if it doesn't exist (Updated to use absolute path)
 if ! grep -q "DATABASE_URL=" "$ENV_FILE"; then
     echo "Adding DATABASE_URL to .env..."
-    echo "DATABASE_URL=sqlite:radio.db" >> "$ENV_FILE"
+    echo "DATABASE_URL=sqlite:$DATA_DIR/radio.db" >> "$ENV_FILE"
 fi
 
 # Add COOKIE_KEY if it doesn't exist
@@ -97,12 +114,13 @@ echo "Building Rust Backend..."
 cd "$INSTALL_DIR/backend" || exit
 
 # Database Setup
-if [ ! -f "radio.db" ]; then
-    echo "Database not found. Creating radio.db..."
-    sqlx database create --database-url "sqlite:radio.db"
+# Note: sqlx will use the DATABASE_URL from .env
+if [ ! -f "$DATA_DIR/radio.db" ]; then
+    echo "Database not found. Creating radio.db at $DATA_DIR..."
+    sqlx database create
 fi
 echo "Running migrations..."
-sqlx migrate run --database-url "sqlite:radio.db"
+sqlx migrate run
 
 # Build the release binary
 cargo build --release

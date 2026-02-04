@@ -1,4 +1,36 @@
-pub const DATA_FOLDER: &str = "data";
+use std::env;
+use std::path::PathBuf;
+
+fn ensure_exists(path: PathBuf) -> PathBuf {
+    if !path.exists() {
+        let _ = std::fs::create_dir_all(&path);
+    }
+    path
+}
+
+pub fn get_data_dir() -> PathBuf {
+    let path = env::var("DATA_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from("."));
+    
+    ensure_exists(path)
+}
+
+pub fn get_music_dir() -> PathBuf {
+    ensure_exists(get_data_dir().join("music"))
+}
+
+pub fn get_covers_dir() -> PathBuf {
+    ensure_exists(get_data_dir().join("covers"))
+}
+
+pub fn get_temporal_dir() -> PathBuf {
+    ensure_exists(get_data_dir().join("temporal"))
+}
+
+pub fn get_save_dat_path() -> PathBuf {
+    get_data_dir().join("save.dat")
+}
 
 // How many seconds of audio to buffer for burst (catch-up buffer for new clients)
 pub const BURST_BUFFER_SECONDS: f64 = 3.0;
