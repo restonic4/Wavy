@@ -5,6 +5,7 @@ use serde::Serialize;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::time::Duration;
+use crate::orm::songs::models::Song;
 use sqlx::SqlitePool;
 use tokio::sync::{broadcast, RwLock};
 use axum_extra::extract::cookie::Key;
@@ -54,12 +55,31 @@ impl Default for ServerPlaybackPosition {
     }
 }
 
+#[derive(Clone, Serialize, Debug)]
+pub struct CurrentSong {
+    pub id: i64,
+    pub title: String,
+    pub artist_names: Option<String>,
+    pub album_title: Option<String>,
+    pub duration_ms: u64,
+    pub started_at: DateTime<Utc>,
+}
+
 #[derive(Default)]
 pub struct StationData {
     /// Active stream listeners tracked by their User ID
     pub listeners: HashMap<i64, Listener>,
     /// Server's current playback position
     pub playback_position: ServerPlaybackPosition,
+    /// Information about the currently playing song
+    pub current_song: Option<CurrentSong>,
+}
+
+/// Messages sent from the loader to the broadcaster
+#[derive(Clone)]
+pub enum StreamMessage {
+    Frame(AudioFrame),
+    SongStart(Song, u64), // Song, duration_ms
 }
 
 /// An MP3 frame with its precise timing information
@@ -69,9 +89,16 @@ pub struct AudioFrame {
     pub duration: Duration,
 }
 
+#[derive(Clone, Serialize, Debug)]
+#[serde(tag = "type", content = "data")]
+pub enum StationEvent {
+    SongChange(CurrentSong),
+}
+
 #[derive(Clone)]
 pub struct AppState {
     pub tx: broadcast::Sender<AudioFrame>,
+    pub event_tx: broadcast::Sender<StationEvent>,
     pub buffer_history: Arc<RwLock<VecDeque<AudioFrame>>>,
     pub station: Arc<RwLock<StationData>>,
     pub db: SqlitePool,

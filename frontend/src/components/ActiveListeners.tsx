@@ -5,12 +5,7 @@ import { GlassCard } from './ui/GlassCard';
 import { Users, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
-
-interface Listener {
-    username: string;
-    connected_at: string;
-    is_authenticated: boolean;
-}
+import { ActiveListener as Listener } from '@/lib/types';
 
 export const ActiveListeners = () => {
     const [listeners, setListeners] = useState<Listener[]>([]);
@@ -18,10 +13,8 @@ export const ActiveListeners = () => {
 
     const fetchListeners = async () => {
         try {
-            const data = await api.status.get();
-            if (data && Array.isArray(data.listeners)) {
-                setListeners(data.listeners);
-            }
+            const data = await api.listeners.list();
+            setListeners(data);
             setLoading(false);
         } catch (err) {
             console.error("Failed to fetch listeners:", err);
@@ -78,7 +71,6 @@ export const ActiveListeners = () => {
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-sky-900 text-white text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">
                                     <div className="flex flex-col items-center">
                                         <span>{listener.username}</span>
-                                        <span className="text-[8px] opacity-60">{listener.is_authenticated ? 'Authenticated' : 'Anonymous'}</span>
                                     </div>
                                     <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-sky-900" />
                                 </div>

@@ -98,6 +98,7 @@ export const api = {
     // Status
     status: {
         get: () => wavyFetch<ServerStatus>('/status'),
+        currentSong: () => wavyFetch<CurrentSong | null>('/song/current'),
         heartbeat: (client_position_ms: number) =>
             wavyFetch<{ desync_ms: number }>('/heartbeat', { method: 'POST', body: JSON.stringify({ client_position_ms }) }),
     },
@@ -109,4 +110,12 @@ export const api = {
 
     // Audio Stream URL
     streamUrl: `${API_BASE_URL}/stream`,
+    getWsUrl: () => {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.host;
+        const wsBase = API_BASE_URL.startsWith('http')
+            ? API_BASE_URL.replace(/^http/, 'ws')
+            : `${protocol}//${host}${API_BASE_URL}`;
+        return `${wsBase}/ws`;
+    }
 };

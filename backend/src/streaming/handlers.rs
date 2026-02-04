@@ -1,7 +1,7 @@
-use crate::state::{AppState, AudioFrame, Listener};
+use crate::state::{AppState, AudioFrame, Listener, StationEvent, CurrentSong};
 use axum::{
     body::Body,
-    extract::{State},
+    extract::{State, ws::{WebSocketUpgrade, WebSocket, Message, Utf8Bytes}},
     http::{header, StatusCode},
     response::{Json, Response},
 };
@@ -146,4 +146,47 @@ pub async fn get_active_listeners(
         .collect();
         
     Json(listeners)
+}
+
+pub async fn get_current_song(
+    State(state): State<AppState>,
+    _user: AuthUser,
+) -> Json<Option<CurrentSong>> {
+    let station_guard = state.station.read().await;
+    Json(station_guard.current_song.clone())
+}
+
+pub async fn ws_handler(
+    State(state): State<AppState>,
+    _user: AuthUser,
+    ws: WebSocketUpgrade,
+) -> Response {
+    ws.on_upgrade(|socket| handle_socket(socket, state))
+}
+
+async fn handle_socket(mut socket: WebSocket, state: AppState) {
+    let mut rx = state.event_tx.subscribe();
+    
+    // Send current state first
+    {
+        let guard = state.station.read().await;
+        if let Some(song) = &guard.current_song {
+            let event = StationEvent::SongChange(song.clone());
+            if let Ok(json) = serde_json::to_string(&event) {
+                let msg = Message::Text(Utf8Bytes::from(json));
+                if socket.send(msg).await.is_err() {
+                    return;
+                }
+            }
+        }
+    }
+
+    while let Ok(event) = rx.recv().await {
+        if let Ok(json) = serde_json::to_string(&event) {
+            let msg = Message::Text(Utf8Bytes::from(json));
+            if socket.send(msg).await.is_err() {
+                break;
+            }
+        }
+    }
 }

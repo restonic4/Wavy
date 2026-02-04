@@ -7,20 +7,21 @@ import { Volume2, VolumeX, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SongVisual } from './SongVisual';
 import { usePlayback } from '@/contexts/PlaybackContext';
+import { useSync } from '@/contexts/SyncContext';
 import { cn } from '@/lib/utils';
 
 export const HeroPlayer = () => {
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const { isPlaying, setIsPlaying, reportProgress } = usePlayback();
+    const { currentSong: syncSong, isConnected } = useSync();
     const [volume, setVolume] = useState(0.8);
     const [isMuted, setIsMuted] = useState(false);
-    const [status, setStatus] = useState<ServerStatus | null>(null);
     const [enrichedSong, setEnrichedSong] = useState<Song | null>(null);
     const [autoplayBlocked, setAutoplayBlocked] = useState(false);
-    const [currentSongId, setCurrentSongId] = useState<number | null>(null);
-    const prevSongIdRef = useRef<number | null>(null);
+    const [progressMs, setProgressMs] = useState(0);
 
     // Fetch Status & Song Logic (Reused from NowPlaying)
+    /* // Removed polling in favor of WebSocket sync
     const fetchStatus = React.useCallback(async () => {
         try {
             const data = await api.status.get();
@@ -46,6 +47,31 @@ export const HeroPlayer = () => {
         const interval = setInterval(fetchStatus, 5000);
         return () => clearInterval(interval);
     }, [fetchStatus]);
+    */
+
+    // Progress Calculation
+    useEffect(() => {
+        if (!syncSong) {
+            setProgressMs(0);
+            return;
+        }
+
+        const interval = setInterval(() => {
+            const startedAt = new Date(syncSong.started_at).getTime();
+            const now = Date.now();
+            const elapsed = now - startedAt;
+            setProgressMs(Math.max(0, elapsed));
+        }, 100);
+
+        return () => clearInterval(interval);
+    }, [syncSong]);
+
+    const formatTime = (ms: number) => {
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    };
 
     // Heartbeat Reporting
     useEffect(() => {
@@ -60,32 +86,35 @@ export const HeroPlayer = () => {
         return () => clearInterval(interval);
     }, [isPlaying, reportProgress]);
 
-    // Enrich song data whenever currentSongId changes
+    // Enrich song data whenever syncSong changes
     useEffect(() => {
-        if (!currentSongId) {
+        if (!syncSong) {
             setEnrichedSong(null);
             return;
         }
 
-        console.log('Enriching song with ID:', currentSongId);
+        console.log('Enriching song with ID:', syncSong.id);
         const enrich = async () => {
             try {
-                const fullSong = await api.songs.get(currentSongId);
+                const fullSong = await api.songs.get(syncSong.id);
                 console.log('Enriched song:', fullSong);
                 setEnrichedSong(fullSong);
             } catch (err) {
                 console.error("Failed to enrich song:", err);
-                // Fallback - get the last item from history
-                const fallback = status?.history && status.history.length > 0
-                    ? status.history[status.history.length - 1]
-                    : null;
-                setEnrichedSong(fallback);
+                // Fallback to sync metadata
+                setEnrichedSong({
+                    id: syncSong.id,
+                    title: syncSong.title,
+                    artist_names: syncSong.artist_names || 'Unknown Artist',
+                    album_title: syncSong.album_title,
+                    has_image: true, // Optimistic
+                } as Song);
             }
         };
         enrich();
-    }, [currentSongId, status]);
+    }, [syncSong]);
 
-    const currentSong = enrichedSong || (status?.history && status.history.length > 0 ? status.history[status.history.length - 1] : null);
+    const currentSong = enrichedSong;
 
     // Audio Logic
     useEffect(() => {
@@ -136,8 +165,6 @@ export const HeroPlayer = () => {
             audioRef.current.play().then(() => {
                 setAutoplayBlocked(false);
                 setIsPlaying(true);
-                // Trigger an immediate fetch to ensure UI updates ASAP
-                fetchStatus();
             }).catch(console.error);
         }
     };
@@ -206,8 +233,36 @@ export const HeroPlayer = () => {
                                     {currentSong.album_title}
                                 </h3>
                             )}
+
+                            {/* Progress Bar */}
+                            <div className="pt-6 space-y-2">
+                                <div className="relative w-full h-1.5 bg-sky-900/5 rounded-full overflow-hidden border border-white/20">
+                                    <motion.div
+                                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-sky-400 to-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.5)]"
+                                        initial={{ width: 0 }}
+                                        animate={{ width: syncSong?.duration_ms ? `${(progressMs / syncSong.duration_ms) * 100}%` : '0%' }}
+                                        transition={{ duration: 0.1, ease: "linear" }}
+                                    />
+                                    {/* Indeterminate flow if duration is 0 */}
+                                    {!syncSong?.duration_ms && (
+                                        <motion.div
+                                            className="absolute top-0 left-0 h-full w-1/3 bg-gradient-to-r from-transparent via-sky-400/50 to-transparent"
+                                            animate={{ left: ['-100%', '200%'] }}
+                                            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                        />
+                                    )}
+                                </div>
+                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-sky-900/30">
+                                    <span>{formatTime(progressMs)}</span>
+                                    {syncSong?.duration_ms ? (
+                                        <span>{formatTime(syncSong.duration_ms)}</span>
+                                    ) : (
+                                        <span>Live</span>
+                                    )}
+                                </div>
+                            </div>
                         </motion.div>
-                    ) : status ? (
+                    ) : isConnected ? (
                         <motion.div
                             key="empty"
                             initial={{ opacity: 0 }}

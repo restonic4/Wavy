@@ -6,6 +6,7 @@ import { Background } from '@/components/Background';
 import { Navbar } from '@/components/Navbar';
 
 import { PlaybackProvider } from '@/contexts/PlaybackContext';
+import { SyncProvider } from '@/contexts/SyncContext';
 
 import { usePathname } from 'next/navigation';
 
@@ -16,11 +17,13 @@ export const ClientLayout = ({ children }: { children: React.ReactNode }) => {
     return (
         <AuthProvider>
             <PlaybackProvider>
-                <Background />
-                {!isHomePage && <Navbar />}
-                <main className={`relative z-0 min-h-screen ${isHomePage ? '' : 'pt-24 pb-12'}`}>
-                    {children}
-                </main>
+                <SyncProvider>
+                    <Background />
+                    {!isHomePage && <Navbar />}
+                    <main className={`relative z-0 min-h-screen ${isHomePage ? '' : 'pt-24 pb-12'}`}>
+                        {children}
+                    </main>
+                </SyncProvider>
             </PlaybackProvider>
         </AuthProvider>
     );

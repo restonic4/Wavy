@@ -4,7 +4,7 @@ mod state;
 mod orm;
 
 use crate::config::{BROADCAST_BUFFER_FRAMES, DISK_BUFFER_FRAMES};
-use crate::state::{AppState, AudioFrame, StationData};
+use crate::state::{AppState, AudioFrame, StationData, StreamMessage, StationEvent};
 use chrono::{Utc, Duration};
 use axum::{
     routing::{get, post},
@@ -12,23 +12,55 @@ use axum::{
 };
 use std::collections::VecDeque;
 use std::env;
+use std::fs::File;
+use std::io::BufReader;
 use std::str::FromStr;
 use std::sync::Arc;
 use dotenvy::dotenv;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use tokio::sync::{broadcast, mpsc, RwLock};
 use tower_http::services::ServeFile;
-use tower_http::cors::{CorsLayer, Any};
+use tower_http::cors::CorsLayer;
 use axum::http::{Method, HeaderValue};
 use axum_extra::extract::cookie::Key;
+use flate2::Compression;
+use flate2::write::ZlibEncoder;
+use serde_json::Value;
 use streaming::{broadcaster, handlers, loader};
 
 mod error;
 mod streaming;
 
+fn test_compiler() -> Result<(), Box<dyn std::error::Error>> {
+    // 1. Read the arbitrary JSON
+    let input_path = "raw_songs/test.json";
+    let file = File::open(input_path).expect("Could not find file");
+    let reader = BufReader::new(file);
+    let json_data: Value = serde_json::from_reader(reader)?;
+
+    // 2. Prepare output file
+    let output_file = File::create("raw_songs/save.dat")?;
+
+    // 3. Chain: File -> Zlib Compressor -> MessagePack Serializer
+    // We use "Best" compression level for smallest size
+    let mut encoder = ZlibEncoder::new(output_file, Compression::best());
+
+    // 4. Serialize JSON object directly into the compressor as MessagePack
+    let mut serializer = rmp_serde::Serializer::new(&mut encoder);
+    serde::Serialize::serialize(&json_data, &mut serializer)?;
+
+    // 5. Finish writing
+    encoder.finish()?;
+
+    println!("Successfully compiled '{}' to 'save.dat'", input_path);
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() {
     dotenv().ok();
+
+    test_compiler().expect("oops");
 
     tracing_subscriber::fmt::init();
 
@@ -58,8 +90,9 @@ async fn main() {
         .expect("Failed to run migrations");
 
     // Create channels for frame streaming
-    let (disk_tx, disk_rx) = mpsc::channel::<AudioFrame>(DISK_BUFFER_FRAMES);
+    let (disk_tx, disk_rx) = mpsc::channel::<StreamMessage>(DISK_BUFFER_FRAMES);
     let (radio_tx, _) = broadcast::channel::<AudioFrame>(BROADCAST_BUFFER_FRAMES);
+    let (event_tx, _) = broadcast::channel::<StationEvent>(100);
 
     let radio_tx_for_broadcaster = radio_tx.clone();
 
@@ -73,6 +106,7 @@ async fn main() {
 
     let app_state = AppState {
         tx: radio_tx,
+        event_tx,
         buffer_history: buffer_history.clone(),
         station: station_data.clone(),
         db: pool,
@@ -85,8 +119,9 @@ async fn main() {
     // Start the broadcaster (paces frames and manages buffer)
     let history_clone = buffer_history.clone();
     let station_clone = station_data.clone();
+    let event_tx_clone = app_state.event_tx.clone();
     tokio::spawn(async move {
-        broadcaster::start(radio_tx_for_broadcaster, disk_rx, history_clone, station_clone).await;
+        broadcaster::start(radio_tx_for_broadcaster, event_tx_clone, disk_rx, history_clone, station_clone).await;
     });
 
     // Start listener cleanup task (removes stale listeners)
@@ -166,7 +201,9 @@ async fn main() {
         .merge(orm::tags::router())
         .route("/stream", get(handlers::stream_audio))
         .route("/heartbeat", post(handlers::heartbeat))
-        .route("/listeners", get(handlers::get_active_listeners));
+        .route("/listeners", get(handlers::get_active_listeners))
+        .route("/song/current", get(handlers::get_current_song))
+        .route("/ws", get(handlers::ws_handler));
 
     let cors = CorsLayer::new()
         .allow_origin([

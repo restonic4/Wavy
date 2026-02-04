@@ -1,5 +1,5 @@
 use crate::config::{DATA_FOLDER, DEFAULT_SAMPLE_RATE};
-use crate::state::{AppState, AudioFrame};
+use crate::state::{AppState, AudioFrame, StreamMessage};
 use bytes::Bytes;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -10,10 +10,9 @@ use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 use tokio::sync::mpsc;
-
 use crate::orm::songs::models::Song;
 
-pub fn start(tx: mpsc::Sender<AudioFrame>, state: Arc<AppState>) {
+pub fn start(tx: mpsc::Sender<StreamMessage>, state: Arc<AppState>) {
     tokio::spawn(async move {
         loop {
             let songs = match crate::orm::songs::repository::find_all(&state.db).await {
@@ -68,7 +67,7 @@ pub fn start(tx: mpsc::Sender<AudioFrame>, state: Arc<AppState>) {
 
 fn stream_mp3_file(
     path: &Path,
-    tx: &mpsc::Sender<AudioFrame>,
+    tx: &mpsc::Sender<StreamMessage>,
     db_song: Song,
     _state: &Arc<AppState>,
 ) -> Result<(), String> {
@@ -111,6 +110,22 @@ fn stream_mp3_file(
         .make(&codec_params, &dec_opts)
         .map_err(|e| format!("Decoder error: {}", e))?;
 
+    let duration_ms = if let Some(n_frames) = codec_params.n_frames {
+        // This is an approximation for MP3, but usually accurate enough for progress bars
+        (n_frames as f64 / sample_rate as f64 * 1000.0) as u64
+    } else {
+        0
+    };
+
+    // Send SongStart event before first frame
+    if tokio::task::block_in_place(|| {
+        tokio::runtime::Handle::current().block_on(async {
+            tx.send(StreamMessage::SongStart(db_song.clone(), duration_ms)).await
+        })
+    }).is_err() {
+        return Err("Channel closed".to_string());
+    }
+
     loop {
         let packet = match format.next_packet() {
             Ok(packet) => packet,
@@ -148,7 +163,7 @@ fn stream_mp3_file(
 
         if tokio::task::block_in_place(|| {
             tokio::runtime::Handle::current().block_on(async {
-                tx.send(audio_frame).await
+                tx.send(StreamMessage::Frame(audio_frame)).await
             })
         }).is_err() {
             return Err("Channel closed".to_string());

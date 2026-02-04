@@ -9,6 +9,20 @@ export interface Song {
     match_error?: number; // For vibe search
 }
 
+export interface CurrentSong {
+    id: number;
+    title: string;
+    artist_names?: string;
+    album_title?: string;
+    duration_ms: number;
+    started_at: string;
+}
+
+export type StationEvent = {
+    type: 'SongChange';
+    data: CurrentSong;
+};
+
 export interface PlaybackStats {
     session_seconds: number;
     total_seconds: number;

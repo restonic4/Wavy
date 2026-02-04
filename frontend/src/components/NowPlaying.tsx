@@ -7,32 +7,20 @@ import { GlassCard } from './ui/GlassCard';
 import { Music2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SongVisual } from './SongVisual';
+import { useSync } from '@/contexts/SyncContext';
 
 export const NowPlaying = () => {
-    const [status, setStatus] = useState<ServerStatus | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { currentSong: syncSong, isConnected } = useSync();
+    const [listeners, setListeners] = useState<any[]>([]);
     const [enrichedSong, setEnrichedSong] = useState<Song | null>(null);
-    const [currentSongId, setCurrentSongId] = useState<number | null>(null);
-    const prevSongIdRef = React.useRef<number | null>(null);
 
+    // Still fetch status occasionally for listeners count
     const fetchStatus = async () => {
         try {
-            const data = await api.status.get();
-            setStatus(data);
-            setLoading(false);
-
-            // History comes in OLDEST FIRST, so the LAST item is the currently playing song
-            const newSongId = data?.history && data.history.length > 0
-                ? data.history[data.history.length - 1].id
-                : null;
-
-            if (newSongId !== prevSongIdRef.current) {
-                console.log('[NowPlaying] Song changed from', prevSongIdRef.current, 'to', newSongId);
-                prevSongIdRef.current = newSongId;
-                setCurrentSongId(newSongId);
-            }
+            const data = await api.listeners.list();
+            setListeners(data);
         } catch (err) {
-            console.error("Failed to fetch status:", err);
+            console.error("Failed to fetch listeners:", err);
         }
     };
 
@@ -42,35 +30,37 @@ export const NowPlaying = () => {
         return () => clearInterval(interval);
     }, []);
 
-    // Effect to enrich song data whenever the current song ID changes
+    // Effect to enrich song data whenever the sync song changes
     useEffect(() => {
-        if (!currentSongId) {
+        if (!syncSong) {
             setEnrichedSong(null);
             return;
         }
 
-        // Always fetch full details to ensure we have has_image and other fields
-        // that the summary status might be missing
-        console.log('[NowPlaying] Enriching song with ID:', currentSongId);
+        console.log('[NowPlaying] Enriching song with ID:', syncSong.id);
         const enrich = async () => {
             try {
-                const fullSong = await api.songs.get(currentSongId);
+                const fullSong = await api.songs.get(syncSong.id);
                 console.log('[NowPlaying] Enriched song:', fullSong);
                 setEnrichedSong(fullSong);
             } catch (err) {
                 console.error("Failed to fetch song details for enrichment:", err);
-                // Fallback to the last item in history
-                const fallback = status?.history && status.history.length > 0
-                    ? status.history[status.history.length - 1]
-                    : null;
-                setEnrichedSong(fallback);
+                // Fallback to sync metadata
+                setEnrichedSong({
+                    id: syncSong.id,
+                    title: syncSong.title,
+                    artist_names: syncSong.artist_names || 'Unknown Artist',
+                    album_title: syncSong.album_title,
+                    has_image: true, // Optimistic
+                } as Song);
             }
         };
 
         enrich();
-    }, [currentSongId, status]);
+    }, [syncSong]);
 
-    const currentSong = enrichedSong || (status?.history && status.history.length > 0 ? status.history[status.history.length - 1] : null);
+    const currentSong = enrichedSong;
+    const loading = !isConnected && !currentSong;
 
     return (
         <GlassCard className="min-w-[300px]">
@@ -137,7 +127,7 @@ export const NowPlaying = () => {
 
             <div className="mt-6 pt-4 border-t border-white/10 flex justify-between items-center text-[10px] font-bold uppercase tracking-widest opacity-40">
                 <span>Live Listeners</span>
-                <span>{Array.isArray(status?.listeners) ? status.listeners.length : (status?.listeners || 0)}</span>
+                <span>{listeners.length}</span>
             </div>
         </GlassCard>
     );

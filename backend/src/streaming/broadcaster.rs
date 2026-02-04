@@ -1,22 +1,46 @@
-use crate::config::BURST_BUFFER_SECONDS;
-use crate::state::{AudioFrame, StationData};
+use crate::state::{AudioFrame, StationData, StreamMessage, StationEvent, CurrentSong};
 use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::Duration;
+use chrono::Utc;
 use tokio::sync::{broadcast, mpsc, RwLock};
+use crate::config::BURST_BUFFER_SECONDS;
 
 pub async fn start(
     tx: broadcast::Sender<AudioFrame>,
-    mut rx: mpsc::Receiver<AudioFrame>,
+    event_tx: broadcast::Sender<StationEvent>,
+    mut rx: mpsc::Receiver<StreamMessage>,
     history: Arc<RwLock<VecDeque<AudioFrame>>>,
     station: Arc<RwLock<StationData>>,
 ) {
     let mut next_send_time = tokio::time::Instant::now();
 
     loop {
-        let frame = match rx.recv().await {
-            Some(f) => f,
+        let msg = match rx.recv().await {
+            Some(m) => m,
             None => break,
+        };
+
+        let frame = match msg {
+            StreamMessage::SongStart(song, duration_ms) => {
+                let current_song = CurrentSong {
+                    id: song.id,
+                    title: song.title,
+                    artist_names: song.artist_names,
+                    album_title: song.album_title,
+                    duration_ms,
+                    started_at: Utc::now(),
+                };
+
+                {
+                    let mut station_guard = station.write().await;
+                    station_guard.current_song = Some(current_song.clone());
+                }
+
+                let _ = event_tx.send(StationEvent::SongChange(current_song));
+                continue;
+            }
+            StreamMessage::Frame(f) => f,
         };
 
         // Send to live listeners
