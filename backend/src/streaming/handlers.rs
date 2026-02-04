@@ -41,7 +41,7 @@ pub async fn stream_audio(
     {
         let mut station_guard = state.station.write().await;
         let current_frame_index = station_guard.playback_position.current_frame_index;
-        let start_total_duration_ms = station_guard.playback_position.total_duration_ms;
+        let start_total_duration_micros = station_guard.playback_position.total_duration_micros;
         
         station_guard.listeners.insert(
             user_id,
@@ -52,7 +52,7 @@ pub async fn stream_audio(
                 last_heartbeat: Utc::now(),
                 start_frame_index: current_frame_index,
                 burst_buffer_ms,
-                start_total_duration_ms,
+                start_total_duration_micros,
                 last_saved_at: Utc::now(),
             },
         );
@@ -100,25 +100,36 @@ pub async fn heartbeat(
     }
     
     let listener = station_guard.listeners.get(&user_id).unwrap();
-    let server_now_ms = station_guard.playback_position.total_duration_ms;
+    let server_now_micros = station_guard.playback_position.total_duration_micros;
 
-    let client_base_pos = listener.start_total_duration_ms.saturating_sub(listener.burst_buffer_ms);
+    // Calculate absolute client position using high-precision micros
+    
+    // Listener start: S_connect (micros)
+    // Burst buffer: B (ms) -> B * 1000 (micros)
+    // Client base pos: S_connect - B
+    
+    let burst_micros = (listener.burst_buffer_ms as u128) * 1_000;
+    let client_base_micros = listener.start_total_duration_micros.saturating_sub(burst_micros);
+    
+    // Return values for API (converted to ms)
+    let server_position_ms = (server_now_micros / 1_000) as u64;
+    let client_base_pos_ms = (client_base_micros / 1_000) as u64;
 
-    // Calculate absolute client position in the server's global timeline
-    // Client received history starting at (start_total_duration_ms - burst_buffer_ms)
-    // Client has played client_position_ms since then.
     let desync_ms = if let Some(client_pos_ms) = query.client_position_ms {
-        let client_abs_pos = client_base_pos + client_pos_ms;
+        let client_abs_micros = client_base_micros + ((client_pos_ms as u128) * 1_000);
         
-        (server_now_ms as i64) - (client_abs_pos as i64)
+        // Desync = Server - Client
+        let diff = (server_now_micros as i128) - (client_abs_micros as i128);
+        
+        (diff / 1_000) as i64
     } else {
         0
     };
 
     Ok(Json(HeartbeatResponse {
         desync_ms,
-        server_position_ms: server_now_ms,
-        client_base_pos_ms: client_base_pos,
+        server_position_ms,
+        client_base_pos_ms,
     }))
 }
 

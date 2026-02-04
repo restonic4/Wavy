@@ -21,8 +21,8 @@ pub struct Listener {
     pub start_frame_index: u64,
     /// Duration of burst buffer sent to this listener (in milliseconds)
     pub burst_buffer_ms: u64,
-    /// The absolute server duration position when this listener connected
-    pub start_total_duration_ms: u64,
+    /// The absolute server duration position when this listener connected (precise)
+    pub start_total_duration_micros: u128,
     /// Last time the listener's progress was saved to the database
     pub last_saved_at: DateTime<Utc>,
 }
@@ -43,8 +43,8 @@ pub struct ServerPlaybackPosition {
     pub current_frame_index: u64,
     /// Timestamp when the server started broadcasting
     pub server_start_time: DateTime<Utc>,
-    /// Total duration of audio played so far (in milliseconds)
-    pub total_duration_ms: u64,
+    /// Total duration of audio played so far (in microseconds for precision)
+    pub total_duration_micros: u128,
 }
 
 impl Default for ServerPlaybackPosition {
@@ -52,7 +52,7 @@ impl Default for ServerPlaybackPosition {
         Self {
             current_frame_index: 0,
             server_start_time: Utc::now(),
-            total_duration_ms: 0,
+            total_duration_micros: 0,
         }
     }
 }
@@ -65,7 +65,9 @@ pub struct CurrentSong {
     pub album_title: Option<String>,
     pub duration_ms: u64,
     pub started_at: DateTime<Utc>,
-    pub started_at_ms: u64, // Server total_duration_ms at start
+    pub started_at_ms: u64, // Derived from micros
+    #[serde(skip)]
+    pub started_at_micros: u128, // High precision tracking
     pub rhythm_data: Option<String>, // Base64 encoded compiled rhythm data
 }
 

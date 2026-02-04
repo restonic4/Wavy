@@ -36,12 +36,15 @@ pub async fn start(
                     duration_ms,
                     started_at: Utc::now(),
                     started_at_ms: 0, // Will be set below
+                    started_at_micros: 0,
                     rhythm_data,
                 };
 
                 {
                     let mut station_guard = station.write().await;
-                    current_song.started_at_ms = station_guard.playback_position.total_duration_ms;
+                    let micros = station_guard.playback_position.total_duration_micros;
+                    current_song.started_at_micros = micros;
+                    current_song.started_at_ms = (micros / 1_000) as u64; // Correct rounding downwards is fine for display
                     station_guard.current_song = Some(current_song.clone());
                 }
 
@@ -58,7 +61,8 @@ pub async fn start(
         {
             let mut station_guard = station.write().await;
             station_guard.playback_position.current_frame_index += 1;
-            station_guard.playback_position.total_duration_ms += frame.duration.as_millis() as u64;
+            // High-precision accumulation (microseconds)
+            station_guard.playback_position.total_duration_micros += frame.duration.as_micros();
         }
 
         // Add to history buffer for new joiners
