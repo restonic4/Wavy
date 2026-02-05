@@ -2,12 +2,16 @@
 
 REPO_URL="https://github.com/restonic4/Wavy.git"
 INSTALL_DIR="/var/www/Wavy"
+DATA_DIR="/var/lib/Wavy"
 
 BACKEND_SVC="wavy-backend.service"
 BACKEND_SRC="installer/services/backend.service"
 
 FRONTEND_SVC="wavy-frontend.service"
 FRONTEND_SRC="installer/services/frontend.service"
+
+BRANCH=${1:-master}
+echo "Target branch: $BRANCH"
 
 # Check if the script is run as root
 if [ "$EUID" -ne 0 ]; then
@@ -50,20 +54,31 @@ done
 
 # Clone or Update logic
 if [ -d "$INSTALL_DIR" ]; then
-    echo "Existing installation found. Pulling latest changes..."
+    echo "Existing installation found. Switching to branch $BRANCH and pulling..."
     cd "$INSTALL_DIR" || exit
     git fetch --all
-    git reset --hard origin/main
+    git checkout "$BRANCH"
+    git reset --hard origin/"$BRANCH"
 else
-    echo "Installing Wavy for the first time..."
-    git clone "$REPO_URL" "$INSTALL_DIR"
+    echo "Installing Wavy branch '$BRANCH' for the first time..."
+    git clone -b "$BRANCH" "$REPO_URL" "$INSTALL_DIR"
     sudo chown -R $USER:www-data "$INSTALL_DIR"
     sudo chmod -R 775 "$INSTALL_DIR"
     cd "$INSTALL_DIR" || exit
 fi
 
+# Data Directory Setup
+if [ ! -d "$DATA_DIR" ]; then
+    echo "Creating data directory at $DATA_DIR..."
+    sudo mkdir -p "$DATA_DIR"
+    
+    # Set permissions so www-data (and current user) can write
+    sudo chown -R $USER:www-data "$DATA_DIR"
+    sudo chmod -R 775 "$DATA_DIR"
+fi
+
 # Dependency Check/Install
-./installer/dependencies.sh
+bash installer/dependencies.sh
 
 # Basic .env backend setup
 echo "Setting up environment variables..."
@@ -75,10 +90,16 @@ if [ ! -f "$ENV_FILE" ]; then
     touch "$ENV_FILE"
 fi
 
-# Add DATABASE_URL if it doesn't exist
+# Add DATA_DIR if it doesn't exist
+if ! grep -q "DATA_DIR=" "$ENV_FILE"; then
+    echo "Adding DATA_DIR to .env..."
+    echo "DATA_DIR=$DATA_DIR" >> "$ENV_FILE"
+fi
+
+# Add DATABASE_URL if it doesn't exist (Updated to use absolute path)
 if ! grep -q "DATABASE_URL=" "$ENV_FILE"; then
     echo "Adding DATABASE_URL to .env..."
-    echo "DATABASE_URL=sqlite:radio.db" >> "$ENV_FILE"
+    echo "DATABASE_URL=sqlite:$DATA_DIR/radio.db" >> "$ENV_FILE"
 fi
 
 # Add COOKIE_KEY if it doesn't exist
@@ -97,12 +118,13 @@ echo "Building Rust Backend..."
 cd "$INSTALL_DIR/backend" || exit
 
 # Database Setup
-if [ ! -f "radio.db" ]; then
-    echo "Database not found. Creating radio.db..."
-    sqlx database create --database-url "sqlite:radio.db"
+# Note: sqlx will use the DATABASE_URL from .env
+if [ ! -f "$DATA_DIR/radio.db" ]; then
+    echo "Database not found. Creating radio.db at $DATA_DIR..."
+    sqlx database create
 fi
 echo "Running migrations..."
-sqlx migrate run --database-url "sqlite:radio.db"
+sqlx migrate run
 
 # Build the release binary
 cargo build --release
@@ -120,8 +142,8 @@ cd "$INSTALL_DIR" || exit
 
 # Execute for both services
 echo "Starting Service Synchronization"
-./installer/service.sh "$BACKEND_SVC" "$BACKEND_SRC"
-./installer/service.sh "$FRONTEND_SVC" "$FRONTEND_SRC"
+bash installer/service.sh "$BACKEND_SVC" "$BACKEND_SRC"
+bash installer/service.sh "$FRONTEND_SVC" "$FRONTEND_SRC"
 
 echo
 echo
@@ -141,7 +163,7 @@ read -r answer < /dev/tty
 
 if [[ "$answer" =~ ^[Yy]$ ]]; then
     echo "Starting Nginx configuration..."
-    ./installer/nginx.sh
+    bash installer/nginx.sh
 fi
 
 echo

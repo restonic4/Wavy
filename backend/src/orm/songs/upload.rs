@@ -5,12 +5,11 @@ use axum::{
 };
 use tokio::fs;
 use tokio::process::Command;
-use std::path::PathBuf;
 use axum_extra::extract::Multipart;
 use crate::state::AppState;
 use crate::error::AppError;
 use crate::auth::AdminOnly;
-use super::models::{Song, CreateSongDto};
+use super::models::CreateSongDto;
 use super::repository;
 
 #[derive(serde::Serialize)]
@@ -91,8 +90,8 @@ pub async fn upload_song(
     let song_id = song.id;
 
     // Define paths
-    let raw_path = PathBuf::from(format!("raw_songs/{}.raw", song_id));
-    let final_path = PathBuf::from(format!("data/{}.mp3", song_id));
+    let raw_path = crate::config::get_temporal_dir().join(format!("{}.raw", song_id));
+    let final_path = crate::config::get_music_dir().join(format!("{}.mp3", song_id));
 
     // Save raw file
     fs::write(&raw_path, &file_data)
@@ -122,7 +121,7 @@ pub async fn upload_song(
 
     // Handle image if provided
     if let Some(img_data) = image_data {
-        let img_path = PathBuf::from(format!("data/{}.png", song_id)); // Defaulting to png for now, or we could detect
+        let img_path = crate::config::get_covers_dir().join(format!("{}.png", song_id)); // Defaulting to png for now, or we could detect
         if let Ok(_) = fs::write(&img_path, &img_data).await {
             //let _ = repository::set_has_image(&state.db, song_id, true).await;
         }

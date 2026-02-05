@@ -7,6 +7,7 @@ import { GlassButton } from './ui/GlassButton';
 import { GlassModal } from './ui/GlassModal';
 import { Search } from './Search';
 import { Leaderboard } from './Leaderboard';
+import { ListenerStats } from './ListenerStats';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlayback } from '@/contexts/PlaybackContext';
 import Link from 'next/link';
@@ -117,16 +118,16 @@ export const MenuSidebar = () => {
                                 {syncStatus && (
                                     <div className="mb-4 flex justify-center">
                                         <div className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border ${Math.abs(syncStatus.desync_ms) < 100
-                                                ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
-                                                : Math.abs(syncStatus.desync_ms) < 500
-                                                    ? 'bg-amber-500/10 text-amber-700 border-amber-500/20'
-                                                    : 'bg-red-500/10 text-red-700 border-red-500/20'
+                                            ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
+                                            : Math.abs(syncStatus.desync_ms) < 500
+                                                ? 'bg-amber-500/10 text-amber-700 border-amber-500/20'
+                                                : 'bg-red-500/10 text-red-700 border-red-500/20'
                                             }`}>
                                             <div className={`w-2 h-2 rounded-full ${Math.abs(syncStatus.desync_ms) < 100
-                                                    ? 'bg-emerald-500 animate-pulse'
-                                                    : Math.abs(syncStatus.desync_ms) < 500
-                                                        ? 'bg-amber-500'
-                                                        : 'bg-red-500'
+                                                ? 'bg-emerald-500 animate-pulse'
+                                                : Math.abs(syncStatus.desync_ms) < 500
+                                                    ? 'bg-amber-500'
+                                                    : 'bg-red-500'
                                                 }`} />
                                             Sync Delay: {syncStatus.desync_ms}ms
                                         </div>
@@ -174,6 +175,10 @@ export const MenuSidebar = () => {
                                 <div className="inline-block px-3 py-1 bg-sky-100 rounded-full">
                                     <p className="text-xs font-bold text-sky-600 uppercase tracking-widest">{user.role}</p>
                                 </div>
+                            </div>
+
+                            <div className="w-full">
+                                <ListenerStats />
                             </div>
 
                             <div className="w-full h-px bg-sky-900/10 my-2" />

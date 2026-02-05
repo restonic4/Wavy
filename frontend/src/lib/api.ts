@@ -1,5 +1,5 @@
 
-import { Song, PlaybackStats, ServerStatus, VibeTag, User, ActiveListener } from './types';
+import { Song, PlaybackStats, ServerStatus, VibeTag, User, ActiveListener, CurrentSong } from './types';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
@@ -100,7 +100,11 @@ export const api = {
         get: () => wavyFetch<ServerStatus>('/status'),
         currentSong: () => wavyFetch<CurrentSong | null>('/song/current'),
         heartbeat: (client_position_ms: number) =>
-            wavyFetch<{ desync_ms: number }>('/heartbeat', { method: 'POST', body: JSON.stringify({ client_position_ms }) }),
+            wavyFetch<{
+                desync_ms: number,
+                server_position_ms: number,
+                client_base_pos_ms: number
+            }>('/heartbeat', { method: 'POST', body: JSON.stringify({ client_position_ms }) }),
     },
 
     // Listeners
