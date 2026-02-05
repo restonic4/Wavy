@@ -78,7 +78,7 @@ if [ ! -d "$DATA_DIR" ]; then
 fi
 
 # Dependency Check/Install
-./installer/dependencies.sh
+bash installer/dependencies.sh
 
 # Basic .env backend setup
 echo "Setting up environment variables..."
@@ -142,8 +142,8 @@ cd "$INSTALL_DIR" || exit
 
 # Execute for both services
 echo "Starting Service Synchronization"
-./installer/service.sh "$BACKEND_SVC" "$BACKEND_SRC"
-./installer/service.sh "$FRONTEND_SVC" "$FRONTEND_SRC"
+bash installer/service.sh "$BACKEND_SVC" "$BACKEND_SRC"
+bash installer/service.sh "$FRONTEND_SVC" "$FRONTEND_SRC"
 
 echo
 echo
@@ -163,7 +163,7 @@ read -r answer < /dev/tty
 
 if [[ "$answer" =~ ^[Yy]$ ]]; then
     echo "Starting Nginx configuration..."
-    ./installer/nginx.sh
+    bash installer/nginx.sh
 fi
 
 echo
