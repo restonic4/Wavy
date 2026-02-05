@@ -4,10 +4,12 @@ import React from 'react';
 import { GlassCard } from './ui/GlassCard';
 import { Clock, Timer, User } from 'lucide-react';
 import { usePlayback } from '@/contexts/PlaybackContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const ListenerStats = () => {
-    const { stats } = usePlayback();
+    const { sessionSeconds } = usePlayback();
+    const { user } = useAuth();
 
     const formatTime = (seconds: number) => {
         const hrs = Math.floor(seconds / 3600);
@@ -19,7 +21,13 @@ export const ListenerStats = () => {
         return `${secs}s`;
     };
 
-    if (!stats) return null;
+    if (!user) return null;
+
+    const stats = {
+        username: user.username,
+        session_seconds: sessionSeconds,
+        total_seconds: user.total_listen_time + sessionSeconds
+    };
 
     return (
         <motion.div

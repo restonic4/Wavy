@@ -13,6 +13,7 @@ interface PlaybackContextType {
     isPlaying: boolean;
     setIsPlaying: (playing: boolean) => void;
     syncStatus: SyncStatus | null;
+    sessionSeconds: number;
     reportProgress: (positionMs: number) => Promise<void>;
     audioRef: React.RefObject<HTMLAudioElement | null>;
 }
@@ -22,19 +23,21 @@ const PlaybackContext = createContext<PlaybackContextType | undefined>(undefined
 export const PlaybackProvider = ({ children }: { children: React.ReactNode }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
+    const [sessionSeconds, setSessionSeconds] = useState(0);
     const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
     const reportProgress = async (positionMs: number) => {
         try {
             const data = await api.status.heartbeat(Math.floor(positionMs));
             setSyncStatus(data);
+            setSessionSeconds(prev => prev + 1);
         } catch (err) {
             console.error("Heartbeat failed:", err);
         }
     };
 
     return (
-        <PlaybackContext.Provider value={{ isPlaying, setIsPlaying, syncStatus, reportProgress, audioRef }}>
+        <PlaybackContext.Provider value={{ isPlaying, setIsPlaying, syncStatus, sessionSeconds, reportProgress, audioRef }}>
             {children}
         </PlaybackContext.Provider>
     );
