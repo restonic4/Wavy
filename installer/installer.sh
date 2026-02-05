@@ -10,6 +10,9 @@ BACKEND_SRC="installer/services/backend.service"
 FRONTEND_SVC="wavy-frontend.service"
 FRONTEND_SRC="installer/services/frontend.service"
 
+BRANCH=${1:-master}
+echo "Target branch: $BRANCH"
+
 # Check if the script is run as root
 if [ "$EUID" -ne 0 ]; then
   echo "Please run as root (use sudo)"
@@ -51,13 +54,14 @@ done
 
 # Clone or Update logic
 if [ -d "$INSTALL_DIR" ]; then
-    echo "Existing installation found. Pulling latest changes..."
+    echo "Existing installation found. Switching to branch $BRANCH and pulling..."
     cd "$INSTALL_DIR" || exit
     git fetch --all
-    git reset --hard origin/main
+    git checkout "$BRANCH"
+    git reset --hard origin/"$BRANCH"
 else
-    echo "Installing Wavy for the first time..."
-    git clone "$REPO_URL" "$INSTALL_DIR"
+    echo "Installing Wavy branch '$BRANCH' for the first time..."
+    git clone -b "$BRANCH" "$REPO_URL" "$INSTALL_DIR"
     sudo chown -R $USER:www-data "$INSTALL_DIR"
     sudo chmod -R 775 "$INSTALL_DIR"
     cd "$INSTALL_DIR" || exit

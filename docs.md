@@ -16,4 +16,7 @@ bash <(curl -sSL https://raw.githubusercontent.com/restonic4/Wavy/refs/heads/mas
 
 bash <(curl -sSL https://raw.githubusercontent.com/restonic4/Wavy/refs/heads/master/installer/uninstall.sh)
 
+install another branch
+bash <(curl -sSL https://raw.githubusercontent.com/restonic4/Wavy/refs/heads/master/installer/installer.sh) branch-name
+
 TODO: dirs, data y raw
