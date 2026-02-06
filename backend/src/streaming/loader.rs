@@ -1,5 +1,5 @@
 use crate::config::DEFAULT_SAMPLE_RATE;
-use crate::state::{AppState, AudioFrame, StreamMessage};
+use crate::state::{AppState};
 use bytes::Bytes;
 use std::path::Path;
 use std::sync::Arc;
@@ -11,6 +11,7 @@ use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 use tokio::sync::mpsc;
 use crate::orm::songs::models::Song;
+use crate::streaming::model::{AudioFrame, StreamMessage};
 
 pub fn start(tx: mpsc::Sender<StreamMessage>, state: Arc<AppState>) {
     tokio::spawn(async move {
