@@ -1,5 +1,22 @@
 #!/bin/bash
 
+# Load NVM if it exists
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+if ! npm -v; then
+    echo "npm not found"
+    exit
+fi
+
+if ! command -v npm &> /dev/null; then
+    # This tries to locate the npm binary path dynamically
+    DYNAMIC_NPM=$(type -p npm || which npm 2>/dev/null)
+    if [ -n "$DYNAMIC_NPM" ]; then
+        export PATH="$(dirname "$DYNAMIC_NPM"):$PATH"
+    fi
+fi
+
 # Function to kill specific background processes
 cleanup() {
     echo ""
@@ -63,6 +80,7 @@ sleep 2
 echo "🎨 Starting Frontend (Next.js)..."
 # Change directory so CWD is correct for next.js
 cd frontend || exit
+npm install
 npm run dev < /dev/null &
 FRONTEND_PID=$!
 cd ..
