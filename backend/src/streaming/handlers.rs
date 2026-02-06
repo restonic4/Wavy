@@ -1,11 +1,14 @@
-use crate::state::{AppState, AudioFrame, Listener, StationEvent, CurrentSong};
+use std::sync::Arc;
+use crate::state::{AppState, AudioFrame, Listener, StationEvent, CurrentSong, StationData};
 use axum::{
     body::Body,
     extract::{State, ws::{WebSocketUpgrade, WebSocket, Message, Utf8Bytes}},
     http::{header, StatusCode},
     response::{Json, Response},
 };
-use chrono::{Utc};
+use chrono::{Duration, Utc};
+use sqlx::SqlitePool;
+use tokio::sync::RwLock;
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
 use crate::auth::AuthUser;
@@ -198,4 +201,72 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
             }
         }
     }
+}
+
+pub fn start_cleanup_loop(station_data: Arc<RwLock<StationData>>, db_update: SqlitePool) {
+    let station_cleanup = station_data.clone();
+
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(10));
+        loop {
+            interval.tick().await;
+
+            let mut updates = Vec::new();
+
+            // Scope for Write Lock
+            {
+                let mut guard = station_cleanup.write().await;
+                let now = Utc::now();
+
+                // Collect IDs to remove
+                let stale_ids: Vec<i64> = guard.listeners.iter()
+                    .filter(|(_, l)| l.is_stale(20))
+                    .map(|(&id, _)| id)
+                    .collect();
+
+                if !stale_ids.is_empty() {
+                    tracing::info!("Removing {} stale listeners", stale_ids.len());
+                    for id in stale_ids {
+                        if let Some(removed) = guard.listeners.remove(&id) {
+                            tracing::debug!("Removed stale listener: {} (ID: {})", removed.username, removed.user_id);
+                        }
+                    }
+                }
+
+                // Accumulate listen time for remaining active listeners
+                for listener in guard.listeners.values_mut() {
+                    let elapsed_ms = now.signed_duration_since(listener.last_saved_at).num_milliseconds();
+
+                    // Only update if we have at least 1 second to add
+                    if elapsed_ms >= 1000 {
+                        let seconds_to_add = elapsed_ms / 1000;
+                        if seconds_to_add > 0 {
+                            updates.push((listener.user_id, seconds_to_add));
+                            // Advance last_saved_at by the exact amount we're saving
+                            // This preserves the remainder milliseconds for the next update
+                            listener.last_saved_at = listener.last_saved_at + Duration::seconds(seconds_to_add);
+                        }
+                    } else if elapsed_ms < 0 {
+                        // Handle potential clock skew
+                        listener.last_saved_at = now;
+                    }
+                }
+            } // Drop lock
+
+            // Update DB (outside lock)
+            for (user_id, seconds) in updates {
+                let result = sqlx::query!(
+                    "UPDATE users SET total_listen_time = total_listen_time + ? WHERE id = ?",
+                    seconds,
+                    user_id
+                )
+                    .execute(&db_update)
+                    .await;
+
+                if let Err(e) = result {
+                    tracing::error!("Failed to update listen time for user {}: {}", user_id, e);
+                }
+            }
+        }
+    });
 }
