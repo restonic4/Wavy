@@ -85,11 +85,6 @@ pub async fn update(pool: &SqlitePool, id: i64, dto: UpdateUserDto) -> Result<Us
                 .to_string()
         );
     }
-
-    // Since we are using standard SQL builder due to dynamic updates, we can't easily use query_as! 
-    // effectively without a lot of boilerplate or a query builder.
-    // For simplicity with sqlx and partial updates, we build the query string or use strict logic.
-    // However, QueryBuilder is cleaner.
     
     let mut qb = sqlx::QueryBuilder::new("UPDATE users SET ");
     let mut separated = qb.separated(", ");

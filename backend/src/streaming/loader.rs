@@ -112,6 +112,7 @@ fn stream_mp3_file(
         .map_err(|e| format!("Decoder error: {}", e))?;
 
     // Load rhythm data (save.dat) if present
+    // TODO: look for the song's beat map, not this demo
     let rhythm_data = std::fs::read(crate::config::get_save_dat_path()).ok();
 
     let duration_ms = if let Some(n_frames) = codec_params.n_frames {
