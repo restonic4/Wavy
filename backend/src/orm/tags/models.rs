@@ -15,7 +15,6 @@ pub struct SongSearchResult {
     pub title: String,
     pub artist_names: Option<String>,
     pub album_title: Option<String>,
-    pub has_image: bool,
     pub match_error: f64,
 }
 

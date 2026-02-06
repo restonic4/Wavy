@@ -21,7 +21,6 @@ pub async fn find_songs_by_vector(
             s.title,
             (SELECT GROUP_CONCAT(a.name, ', ') FROM artists a JOIN song_artists sa ON a.id = sa.artist_id WHERE sa.song_id = s.id) as artist_names,
             al.title as album_title,
-            s.has_image as has_image,
             SUM(
                 CASE 
         "#
