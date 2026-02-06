@@ -1,13 +1,13 @@
 'use client';
 
-import { HeroPlayer } from '@/components/HeroPlayer';
+import { RadioPlayer } from '@/components/RadioPlayer';
 import { MenuSidebar } from '@/components/MenuSidebar';
 import { ScrollableListeners } from '@/components/ScrollableListeners';
 import { Waves } from 'lucide-react';
 
 export default function Home() {
   return (
-    <main className="relative h-screen w-full overflow-hidden flex flex-col items-center justify-center">
+    <main className="relative min-h-screen w-full flex flex-col items-center justify-center">
       {/* Top Left Logo */}
       <div className="absolute top-6 left-6 z-40 flex items-center gap-3 select-none">
         <div className="p-3 bg-white/20 backdrop-blur-md rounded-xl border border-white/30 shadow-lg">
@@ -23,7 +23,7 @@ export default function Home() {
 
       {/* Main Content - Centered Player */}
       <div className="z-10 w-full animate-fade-in">
-        <HeroPlayer />
+        <RadioPlayer />
       </div>
 
       {/* Footer - Scrollable Listeners */}

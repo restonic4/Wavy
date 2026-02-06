@@ -68,6 +68,7 @@ export const ListenerStats = () => {
                     </div>
                 </div>
 
+                {/* TODO: Update with DB / connection status */}
                 <div className="mt-6 flex items-center justify-center gap-2 py-2 px-4 bg-emerald-500/10 rounded-full border border-emerald-500/10">
                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                     <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none">

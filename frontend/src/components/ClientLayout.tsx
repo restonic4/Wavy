@@ -22,9 +22,9 @@ export const ClientLayout = ({ children }: { children: React.ReactNode }) => {
                     <Background />
                     <RhythmDebugger />
                     {!isHomePage && <Navbar />}
-                    <main className={`relative z-0 min-h-screen ${isHomePage ? '' : 'pt-24 pb-12'}`}>
+                    <div className="w-full">
                         {children}
-                    </main>
+                    </div>
                 </SyncProvider>
             </PlaybackProvider>
         </AuthProvider>

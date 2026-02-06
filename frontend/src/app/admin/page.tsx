@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { AdminGuard } from '@/components/AdminGuard';
+import { AdminGuard } from '@/components/admin/AdminGuard';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { api } from '@/lib/api';
