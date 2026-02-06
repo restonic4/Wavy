@@ -2,6 +2,8 @@ db create
 sqlx database create --database-url "sqlite:radio.db"
 
 sqlx migrate run --database-url "sqlite:radio.db"
+or
+sqlx migrate run --source backend/migrations --database-url "sqlite:dev_data/radio.db"
 
 Reproducir musica
 Playlists
